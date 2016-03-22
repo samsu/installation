@@ -12,6 +12,7 @@ RABBIT_USER=guest
 RABBIT_PASS=$RABBIT_USER
 SERVICES="nova keystone glance neutron cinder"
 ADMIN_TOKEN=abc012345678909876543210cba
+METADATA_SECRET=metadata_shared_secret
 
 KEYSTONE_T_NAME_ADMIN=admin
 KEYSTONE_T_NAME_SERVICE=service
@@ -27,6 +28,7 @@ IMAGE_FILE=cirros-0.3.4-x86_64-disk.img
 IMAGE_URL=http://download.cirros-cloud.net/0.3.4/$IMAGE_FILE
 IMAGE_NAME='cirros-0.3.4-x86_64'
 
+INTERFACE_EXT=eth2
 
 function base() {
     set -o xtrace
@@ -44,6 +46,13 @@ function base() {
         eval KEYSTONE_U_${service^^}=$service
         eval KEYSTONE_U_PWD_${service^^}=$service
     done
+        cat > ~/openrc << EOF
+export OS_TENANT_NAME=$KEYSTONE_T_NAME_ADMIN
+export OS_USERNAME=$KEYSTONE_U_ADMIN
+export OS_PASSWORD=$KEYSTONE_U_ADMIN_PWD
+export OS_AUTH_URL=http://$CTRL_MGMT_IP:35357/v2.0
+EOF
+
 }
 
 function database() {
@@ -258,13 +267,6 @@ EOF
 
     KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep id | awk '{print $4}')
 
-    cat > ~/openrc << EOF
-export OS_TENANT_NAME=$KEYSTONE_T_NAME_ADMIN
-export OS_USERNAME=$KEYSTONE_U_ADMIN
-export OS_PASSWORD=$KEYSTONE_U_ADMIN_PWD
-export OS_AUTH_URL=http://$CTRL_MGMT_IP:35357/v2.0
-EOF
-
     source ~/openrc
 
 }
@@ -313,31 +315,36 @@ function glance() {
 
 
 function _nova_configure() {
-    crudini --set /etc/nova/nova.conf database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
-    crudini --set /etc/nova/nova.conf DEFAULT rpc_backend rabbit
-    crudini --set /etc/nova/nova.conf DEFAULT rabbit_host $CTRL_MGMT_IP
-    crudini --set /etc/nova/nova.conf DEFAULT rabbit_password $RABBIT_PASS
-    crudini --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
-    crudini --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
-    crudini --set /etc/nova/nova.conf DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
-    crudini --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
-    crudini --set /etc/nova/nova.conf DEFAULT my_ip $MGMT_IP
-    crudini --set /etc/nova/nova.conf DEFAULT vnc_enabled True
-    crudini --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
-    crudini --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $MGMT_IP
-    crudini --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
-    crudini --set /etc/nova/nova.conf DEFAULT debug True
+    if [ -e "/etc/nova/nova.conf" ]; then
+        crudini --set /etc/nova/nova.conf database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
+        crudini --set /etc/nova/nova.conf DEFAULT rpc_backend rabbit
+        crudini --set /etc/nova/nova.conf DEFAULT rabbit_host $CTRL_MGMT_IP
+        crudini --set /etc/nova/nova.conf DEFAULT rabbit_password $RABBIT_PASS
+        crudini --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
+        crudini --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
+        crudini --set /etc/nova/nova.conf DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
+        crudini --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+        crudini --set /etc/nova/nova.conf DEFAULT my_ip $MGMT_IP
+        crudini --set /etc/nova/nova.conf DEFAULT vnc_enabled True
+        crudini --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
+        crudini --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $MGMT_IP
+        crudini --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
+        crudini --set /etc/nova/nova.conf DEFAULT debug True
 
-    crudini --set /etc/nova/nova.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
-    crudini --set /etc/nova/nova.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
-    crudini --set /etc/nova/nova.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
-    crudini --set /etc/nova/nova.conf keystone_authtoken admin_user $KEYSTONE_U_NOVA
-    crudini --set /etc/nova/nova.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_NOVA
+        crudini --set /etc/nova/nova.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
+        crudini --set /etc/nova/nova.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
+        crudini --set /etc/nova/nova.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set /etc/nova/nova.conf keystone_authtoken admin_user $KEYSTONE_U_NOVA
+        crudini --set /etc/nova/nova.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_NOVA
 
-    crudini --set /etc/nova/nova.conf glance host=$CTRL_MGMT_IP
-    crudini --set /etc/nova/nova.conf libvirt virt_type qemu
+        crudini --set /etc/nova/nova.conf glance host=$CTRL_MGMT_IP
+        crudini --set /etc/nova/nova.conf libvirt virt_type qemu
 
-    crudini --set /etc/nova/nova.conf cinder os_region_name $REGION
+        crudini --set /etc/nova/nova.conf neutron service_metadata_proxy True
+        crudini --set /etc/nova/nova.conf neutron metadata_proxy_shared_secret $METADATA_SECRET
+
+        crudini --set /etc/nova/nova.conf cinder os_region_name $REGION
+    fi
 }
 
 
@@ -369,41 +376,83 @@ function nova_compute() {
 
 
 function _neutron_configure() {
-    crudini --set /etc/neutron/neutron.conf database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$CTRL_MGMT_IP/neutron
-    crudini --set /etc/neutron/neutron.conf DEFAULT rpc_backend rabbit
-    crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_host $CTRL_MGMT_IP
-    crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_password $RABBIT_PASS
-    crudini --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
-    crudini --set /etc/neutron/neutron.conf DEFAULT core_plugin ml2
-    crudini --set /etc/neutron/neutron.conf DEFAULT service_plugins router
-    crudini --set /etc/neutron/neutron.conf DEFAULT allow_overlapping_ips True
-    crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_status_changes True
-    crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_data_changes True
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_url http://$CTRL_MGMT_IP:8774/v2
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://$CTRL_MGMT_IP:35357/v2.0/
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_username $KEYSTONE_U_NOVA
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id $KEYSTONE_T_ID_SERVICE
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_password $KEYSTONE_U_PWD_NOVA
-    crudini --set /etc/neutron/neutron.conf DEFAULT debug True
-    crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
-    crudini --set /etc/neutron/neutron.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
-    crudini --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
-    crudini --set /etc/neutron/neutron.conf keystone_authtoken admin_user $KEYSTONE_U_NEUTRON
-    crudini --set /etc/neutron/neutron.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_NEUTRON
+    ## config neutron.conf
+    if [ -e "/etc/neutron/neutron.conf" ]; then
+        crudini --set /etc/neutron/neutron.conf DEFAULT debug True
+        crudini --set /etc/neutron/neutron.conf DEFAULT rpc_backend rabbit
+        crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_host $CTRL_MGMT_IP
+        crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_password $RABBIT_PASS
+        crudini --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
+        crudini --set /etc/neutron/neutron.conf DEFAULT core_plugin ml2
+        crudini --set /etc/neutron/neutron.conf DEFAULT service_plugins router
+        crudini --set /etc/neutron/neutron.conf DEFAULT allow_overlapping_ips True
+        crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_status_changes True
+        crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_data_changes True
+        crudini --set /etc/neutron/neutron.conf DEFAULT nova_url http://$CTRL_MGMT_IP:8774/v2
+        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://$CTRL_MGMT_IP:35357/v2.0/
+        crudini --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
+        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_username $KEYSTONE_U_NOVA
+        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id $KEYSTONE_T_ID_SERVICE
+        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_password $KEYSTONE_U_PWD_NOVA
+
+        crudini --set /etc/neutron/neutron.conf database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$CTRL_MGMT_IP/neutron
+
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_plugin password
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken project_domain_id default
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken user_domain_id default
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken username $KEYSTONE_U_NEUTRON
+        crudini --set /etc/neutron/neutron.conf keystone_authtoken password $KEYSTONE_U_PWD_NEUTRON
+    fi
 
     ## /etc/neutron/plugins/ml2/ml2_conf.ini
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 type_drivers local,vxlan
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 tenant_network_types vxlan
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 mechanism_drivers openvswitch,l2population
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 external_network_type local
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2_type_vxlan vni_ranges 1:1000
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_security_group True
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_ipset True
-    crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+    if [ -e "/etc/neutron/plugins/ml2/ml2_conf.ini" ]; then
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 type_drivers local,vxlan
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 tenant_network_types vxlan
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 mechanism_drivers openvswitch,l2population
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 external_network_type local
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2_type_vxlan vni_ranges 1:1000
+
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_security_group True
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_ipset True
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+    fi
 
     if [ ! -e "/etc/neutron/plugin.ini" ]; then
         ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+    fi
+
+    ## configure the Layer-3 (L3) agent /etc/neutron/l3_agent.ini
+    if [ -e "/etc/neutron/l3_agent.ini" ]; then
+        crudini --set /etc/neutron/l3_agent.ini DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
+        crudini --set /etc/neutron/l3_agent.ini DEFAULT use_namespaces True
+        crudini --set /etc/neutron/l3_agent.ini DEFAULT external_network_bridge br-ex
+        crudini --set /etc/neutron/l3_agent.ini DEFAULT router_delete_namespaces True
+        crudini --set /etc/neutron/l3_agent.ini DEFAULT debug True
+    fi
+
+    ## configure the DHCP agent /etc/neutron/dhcp_agent.ini
+    if [ -e "/etc/neutron/dhcp_agent.ini" ]; then
+        cccrudini --set /etc/neutron/dhcp_agent.ini DEFAULT debug True
+        crudini --set /etc/neutron/dhcp_agent.ini DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
+        crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dhcp_driver neutron.agent.linux.dhcp.Dnsmasq
+        crudini --set /etc/neutron/dhcp_agent.ini DEFAULT use_namespaces True
+        crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dhcp_delete_namespaces True
+        crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dnsmasq_config_file /etc/neutron/dnsmasq-neutron.conf
+    fi
+
+    ## config metadata agent /etc/neutron/metadata_agent.ini
+    if [ -e "/etc/neutron/metadata_agent.ini" ]; then
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_url http://$CTRL_MGMT_IP:5000/v2.0
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_region $REGION
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_tenant_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_user $KEYSTONE_U_NEUTRON
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_password $KEYSTONE_U_PWD_NEUTRON
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT nova_metadata_ip $CTRL_MGMT_IP
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT metadata_proxy_shared_secret $METADATA_SECRET
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT debug True
     fi
 }
 
@@ -431,6 +480,26 @@ function neutron_compute() {
     systemctl restart openvswitch.service neutron-openvswitch-agent.service
 
 }
+
+
+function neutron_network() {
+    yum install -y openstack-neutron openstack-neutron-ml2 openstack-neutron-openvswitch
+
+    _neutron_configure
+
+    systemctl enable openvswitch.service
+    systemctl restart openvswitch.service
+
+    ovs-vsctl --may-exist add-br br-ex
+    ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
+
+    systemctl enable neutron-openvswitch-agent.service neutron-l3-agent.service \
+    neutron-dhcp-agent.service neutron-metadata-agent.service neutron-ovs-cleanup.service
+
+    systemctl restart neutron-openvswitch-agent.service neutron-l3-agent.service \
+    neutron-dhcp-agent.service neutron-metadata-agent.service
+}
+
 
 
 function cinder_ctrl() {
@@ -485,21 +554,27 @@ function dashboard() {
 }
 
 
-
+function allinone() {
+    database
+    mq
+    keystone
+    glance
+    nova_ctrl
+    neutron_ctrl
+    cinder_ctrl
+    dashboard
+    nova_compute
+    neutron_compute
+    neutron_network
+}
 
 
 function installation() {
     base
-    #database
-    #mq
-    #keystone
-    #glance
-    #nova_ctrl
-    #neutron_ctrl
-    #cinder_ctrl
-    #dashboard
-    nova_compute
-    neutron_compute
+    for service in "$@"; do
+        echo "##### Installing $service ..."
+        $service
+    done
 }
 
 
@@ -507,5 +582,5 @@ function timestamp {
     awk '{ print strftime("%Y-%m-%d %H:%M:%S | "), $0; fflush(); }'
 }
 
-installation | timestamp
+installation $@ | timestamp
 
