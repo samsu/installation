@@ -5,7 +5,7 @@
 # centos use
 MGMT_IP=`ifconfig eth0 |grep 'inet '| cut -f 10 -d " "`
 
-CTRL_MGMT_IP=$MGMT_IP
+CTRL_MGMT_IP=10.160.37.56
 
 MYSQL_ROOT_PASSWORD=root
 RABBIT_USER=guest
@@ -35,13 +35,19 @@ function base() {
     yum upgrade -y
 
     yum autoremove -y firewalld
-    yum install -y ntp
+    yum install -y ntp crudini
     yum install -y openstack-selinux
 
+    for service in $SERVICES; do
+        eval DB_USER_${service^^}=$service
+        eval DB_PWD_${service^^}=$service
+        eval KEYSTONE_U_${service^^}=$service
+        eval KEYSTONE_U_PWD_${service^^}=$service
+    done
 }
 
 function database() {
-    yum install -y mariadb mariadb-server MySQL-python python-openstackclient crudini
+    yum install -y mariadb mariadb-server MySQL-python python-openstackclient
     # generate config file
     cat > /etc/my.cnf << EOF
 [mysqld]
@@ -117,10 +123,7 @@ expect eof
         yum erase -y expect
     fi
 
-
     for service in $SERVICES; do
-        eval DB_USER_${service^^}=$service
-        eval DB_PWD_${service^^}=$service
         mysqlshow -uroot -p$MYSQL_ROOT_PASSWORD $service 2>&1| grep -o "Database: $service" > /dev/nul
         if [ $? -ne 0 ]; then
             eval SERVICE_DB_USER=\$$(echo DB_USER_${service^^})
@@ -130,8 +133,6 @@ expect eof
             mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON $service.* TO '$(echo $SERVICE_DB_USER)'@'%' IDENTIFIED BY '$(echo $SERVICE_DB_PWD)';"
             mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON $service.* TO '$(echo $SERVICE_DB_USER)'@'localhost' IDENTIFIED BY '$(echo $SERVICE_DB_PWD)';"
         fi
-        eval KEYSTONE_U_${service^^}=$service
-        eval KEYSTONE_U_PWD_${service^^}=$service
     done
 
 }
@@ -158,7 +159,7 @@ function keystone() {
     ## TODO: update keystone.conf
     ## scp 10.160.37.51:/root/bak/keystone.conf /etc/keystone/keystone.conf
     crudini --set /etc/keystone/keystone.conf DEFAULT admin_token $ADMIN_TOKEN
-    crudini --set /etc/keystone/keystone.conf database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$MGMT_IP/keystone
+    crudini --set /etc/keystone/keystone.conf database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$CTRL_MGMT_IP/keystone
     crudini --set /etc/keystone/keystone.conf token provider keystone.token.providers.uuid.Provider
     crudini --set /etc/keystone/keystone.conf token driver keystone.token.persistence.backends.sql.Token
     crudini --set /etc/keystone/keystone.conf revoke driver keystone.contrib.revoke.backends.sql.Revoke
@@ -180,7 +181,7 @@ function keystone() {
 
 
     export OS_TOKEN=$ADMIN_TOKEN
-    export OS_URL=http://$MGMT_IP:35357/v3
+    export OS_URL=http://$CTRL_MGMT_IP:35357/v3
     export OS_IDENTITY_API_VERSION=3
 
 
@@ -203,35 +204,35 @@ function keystone() {
         if [ $? -ne 0 ]; then
             if [ $service == 'keystone' ] ; then
                 openstack service create --name keystone --description "OpenStack Identity" identity
-                openstack endpoint create --region $REGION identity public http://$MGMT_IP:5000/v2.0
-                openstack endpoint create --region $REGION identity internal http://$MGMT_IP:5000/v2.0
-                openstack endpoint create --region $REGION identity admin http://$MGMT_IP:35357/v2.0
+                openstack endpoint create --region $REGION identity public http://$CTRL_MGMT_IP:5000/v2.0
+                openstack endpoint create --region $REGION identity internal http://$CTRL_MGMT_IP:5000/v2.0
+                openstack endpoint create --region $REGION identity admin http://$CTRL_MGMT_IP:35357/v2.0
                 continue
             elif [ $service == 'glance' ] ; then
                 openstack service create --name glance --description "OpenStack Image service" image
-                openstack endpoint create --region $REGION image public http://$MGMT_IP:9292
-                openstack endpoint create --region $REGION image internal http://$MGMT_IP:9292
-                openstack endpoint create --region $REGION image admin http://$MGMT_IP:9292
+                openstack endpoint create --region $REGION image public http://$CTRL_MGMT_IP:9292
+                openstack endpoint create --region $REGION image internal http://$CTRL_MGMT_IP:9292
+                openstack endpoint create --region $REGION image admin http://$CTRL_MGMT_IP:9292
             elif  [ $service == 'nova' ] ; then
                 openstack service create --name nova --description "OpenStack Compute" compute
-                openstack endpoint create --region $REGION compute public http://$MGMT_IP:8774/v2/%\(tenant_id\)s
-                openstack endpoint create --region $REGION compute internal http://$MGMT_IP:8774/v2/%\(tenant_id\)s
-                openstack endpoint create --region $REGION compute admin http://$MGMT_IP:8774/v2/%\(tenant_id\)s
+                openstack endpoint create --region $REGION compute public http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
+                openstack endpoint create --region $REGION compute internal http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
+                openstack endpoint create --region $REGION compute admin http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
             elif  [ $service == 'neutron' ] ; then
                 openstack service create --name neutron --description "OpenStack Networking" network
-                openstack endpoint create --region $REGION network public http://$MGMT_IP:9696
-                openstack endpoint create --region $REGION network internal http://$MGMT_IP:9696
-                openstack endpoint create --region $REGION network admin http://$MGMT_IP:9696
+                openstack endpoint create --region $REGION network public http://$CTRL_MGMT_IP:9696
+                openstack endpoint create --region $REGION network internal http://$CTRL_MGMT_IP:9696
+                openstack endpoint create --region $REGION network admin http://$CTRL_MGMT_IP:9696
             elif  [ $service == 'cinder' ] ; then
                 openstack service create --name cinder --description "OpenStack Volume Service" volume
-                openstack endpoint create --region $REGION volume public http://$MGMT_IP:8776/v1/%\(tenant_id\)s
-                openstack endpoint create --region $REGION volume internal http://$MGMT_IP:8776/v1/%\(tenant_id\)s
-                openstack endpoint create --region $REGION volume admin http://$MGMT_IP:8776/v1/%\(tenant_id\)s
+                openstack endpoint create --region $REGION volume public http://$CTRL_MGMT_IP:8776/v1/%\(tenant_id\)s
+                openstack endpoint create --region $REGION volume internal http://$CTRL_MGMT_IP:8776/v1/%\(tenant_id\)s
+                openstack endpoint create --region $REGION volume admin http://$CTRL_MGMT_IP:8776/v1/%\(tenant_id\)s
 
                 openstack service create --name cinderv2 --description "OpenStack Volume Service" volumev2
-                openstack endpoint create --region $REGION volumev2 public http://$MGMT_IP:8776/v2/%\(tenant_id\)s
-                openstack endpoint create --region $REGION volumev2 internal http://$MGMT_IP:8776/v2/%\(tenant_id\)s
-                openstack endpoint create --region $REGION volumev2 admin http://$MGMT_IP:8776/v2/%\(tenant_id\)s
+                openstack endpoint create --region $REGION volumev2 public http://$CTRL_MGMT_IP:8776/v2/%\(tenant_id\)s
+                openstack endpoint create --region $REGION volumev2 internal http://$CTRL_MGMT_IP:8776/v2/%\(tenant_id\)s
+                openstack endpoint create --region $REGION volumev2 admin http://$CTRL_MGMT_IP:8776/v2/%\(tenant_id\)s
             fi
         fi
         if [ $service != 'keystone' ] ; then
@@ -261,7 +262,7 @@ EOF
 export OS_TENANT_NAME=$KEYSTONE_T_NAME_ADMIN
 export OS_USERNAME=$KEYSTONE_U_ADMIN
 export OS_PASSWORD=$KEYSTONE_U_ADMIN_PWD
-export OS_AUTH_URL=http://$MGMT_IP:35357/v2.0
+export OS_AUTH_URL=http://$CTRL_MGMT_IP:35357/v2.0
 EOF
 
     source ~/openrc
@@ -272,18 +273,18 @@ EOF
 function glance() {
     ## glance
     yum install -y openstack-glance
-    crudini --set /etc/glance/glance-api.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$MGMT_IP/glance
-    crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_uri http://$MGMT_IP:5000/v2.0
-    crudini --set /etc/glance/glance-api.conf keystone_authtoken identity_uri http://$MGMT_IP:35357
+    crudini --set /etc/glance/glance-api.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
+    crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
+    crudini --set /etc/glance/glance-api.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
     crudini --set /etc/glance/glance-api.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
     crudini --set /etc/glance/glance-api.conf keystone_authtoken admin_user $KEYSTONE_U_GLANCE
     crudini --set /etc/glance/glance-api.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_GLANCE
     crudini --set /etc/glance/glance-api.conf paste_deploy flavor keystone
     crudini --set /etc/glance/glance-api.conf DEFAULT notification_driver noop
 
-    crudini --set /etc/glance/glance-registry.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$MGMT_IP/glance
-    crudini --set /etc/glance/glance-registry.conf keystone_authtoken auth_uri http://$MGMT_IP:5000/v2.0
-    crudini --set /etc/glance/glance-registry.conf keystone_authtoken identity_uri http://$MGMT_IP:35357
+    crudini --set /etc/glance/glance-registry.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken admin_user $KEYSTONE_U_GLANCE
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_GLANCE
@@ -311,14 +312,10 @@ function glance() {
 }
 
 
-function nova_ctrl() {
-    ## nova controller
-    yum install -y openstack-nova-api openstack-nova-cert openstack-nova-conductor \
-      openstack-nova-console openstack-nova-novncproxy openstack-nova-scheduler
-
-    crudini --set /etc/nova/nova.conf database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$MGMT_IP/nova
+function _nova_configure() {
+    crudini --set /etc/nova/nova.conf database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
     crudini --set /etc/nova/nova.conf DEFAULT rpc_backend rabbit
-    crudini --set /etc/nova/nova.conf DEFAULT rabbit_host $MGMT_IP
+    crudini --set /etc/nova/nova.conf DEFAULT rabbit_host $CTRL_MGMT_IP
     crudini --set /etc/nova/nova.conf DEFAULT rabbit_password $RABBIT_PASS
     crudini --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
     crudini --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
@@ -331,16 +328,25 @@ function nova_ctrl() {
     crudini --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
     crudini --set /etc/nova/nova.conf DEFAULT debug True
 
-    crudini --set /etc/nova/nova.conf keystone_authtoken auth_uri http://$MGMT_IP:5000/v2.0
-    crudini --set /etc/nova/nova.conf keystone_authtoken identity_uri http://$MGMT_IP:35357
+    crudini --set /etc/nova/nova.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
+    crudini --set /etc/nova/nova.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
     crudini --set /etc/nova/nova.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
     crudini --set /etc/nova/nova.conf keystone_authtoken admin_user $KEYSTONE_U_NOVA
     crudini --set /etc/nova/nova.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_NOVA
 
-    crudini --set /etc/nova/nova.conf glance host=$MGMT_IP
+    crudini --set /etc/nova/nova.conf glance host=$CTRL_MGMT_IP
     crudini --set /etc/nova/nova.conf libvirt virt_type qemu
 
     crudini --set /etc/nova/nova.conf cinder os_region_name $REGION
+}
+
+
+function nova_ctrl() {
+    ## nova controller
+    yum install -y openstack-nova-api openstack-nova-cert openstack-nova-conductor \
+      openstack-nova-console openstack-nova-novncproxy openstack-nova-scheduler
+
+    _nova_configure
 
     su -s /bin/sh -c "nova-manage db sync" nova
 
@@ -354,13 +360,18 @@ function nova_ctrl() {
 }
 
 
-function neutron_ctrl() {
-    # neutron
-    yum install -y openstack-neutron openstack-neutron-ml2 which
+function nova_compute() {
+    yum install -y openstack-nova-compute sysfsutils
+    _nova_configure
+    systemctl enable libvirtd.service openstack-nova-compute.service
+    systemctl restart libvirtd.service openstack-nova-compute.service
+}
 
-    crudini --set /etc/neutron/neutron.conf database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$MGMT_IP/neutron
+
+function _neutron_configure() {
+    crudini --set /etc/neutron/neutron.conf database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$CTRL_MGMT_IP/neutron
     crudini --set /etc/neutron/neutron.conf DEFAULT rpc_backend rabbit
-    crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_host $MGMT_IP
+    crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_host $CTRL_MGMT_IP
     crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_password $RABBIT_PASS
     crudini --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
     crudini --set /etc/neutron/neutron.conf DEFAULT core_plugin ml2
@@ -368,14 +379,15 @@ function neutron_ctrl() {
     crudini --set /etc/neutron/neutron.conf DEFAULT allow_overlapping_ips True
     crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_status_changes True
     crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_data_changes True
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_url http://$MGMT_IP:8774/v2
-    crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://$MGMT_IP:35357/v2.0/
+    crudini --set /etc/neutron/neutron.conf DEFAULT nova_url http://$CTRL_MGMT_IP:8774/v2
+    crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://$CTRL_MGMT_IP:35357/v2.0/
     crudini --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
     crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_username $KEYSTONE_U_NOVA
     crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id $KEYSTONE_T_ID_SERVICE
     crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_password $KEYSTONE_U_PWD_NOVA
-    crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://$MGMT_IP:5000/v2.0
-    crudini --set /etc/neutron/neutron.conf keystone_authtoken identity_uri http://$MGMT_IP:35357
+    crudini --set /etc/neutron/neutron.conf DEFAULT debug True
+    crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
+    crudini --set /etc/neutron/neutron.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
     crudini --set /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
     crudini --set /etc/neutron/neutron.conf keystone_authtoken admin_user $KEYSTONE_U_NEUTRON
     crudini --set /etc/neutron/neutron.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_NEUTRON
@@ -393,6 +405,13 @@ function neutron_ctrl() {
     if [ ! -e "/etc/neutron/plugin.ini" ]; then
         ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
     fi
+}
+
+function neutron_ctrl() {
+    # neutron
+    yum install -y openstack-neutron openstack-neutron-ml2 which
+
+    _neutron_configure
 
     su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
 
@@ -401,25 +420,38 @@ function neutron_ctrl() {
 }
 
 
+function neutron_compute() {
+    # install neutron components on compute nodes
+    yum install -y openstack-neutron-openvswitch ipset
+
+    _neutron_configure
+
+    systemctl restart openstack-nova-compute.service
+    systemctl enable openvswitch.service neutron-openvswitch-agent.service
+    systemctl restart openvswitch.service neutron-openvswitch-agent.service
+
+}
+
+
 function cinder_ctrl() {
     # cinder ctrl
     yum install -y openstack-cinder
 
-    crudini --set /etc/cinder/cinder.conf database connection mysql://$DB_USER_CINDER:$DB_PWD_CINDER@$MGMT_IP/cinder
+    crudini --set /etc/cinder/cinder.conf database connection mysql://$DB_USER_CINDER:$DB_PWD_CINDER@$CTRL_MGMT_IP/cinder
     crudini --set /etc/cinder/cinder.conf DEFAULT rpc_backend rabbit
     crudini --set /etc/cinder/cinder.conf DEFAULT auth_strategy keystone
     crudini --set /etc/cinder/cinder.conf DEFAULT my_ip $MGMT_IP
     crudini --set /etc/cinder/cinder.conf DEFAULT debug True
 
-    crudini --set /etc/cinder/cinder.conf oslo_messaging_rabbit rabbit_host $MGMT_IP
+    crudini --set /etc/cinder/cinder.conf oslo_messaging_rabbit rabbit_host $CTRL_MGMT_IP
     crudini --set /etc/cinder/cinder.conf oslo_messaging_rabbit rabbit_password $RABBIT_PASS
     crudini --set /etc/cinder/cinder.conf oslo_messaging_rabbit rabbit_userid $RABBIT_USER
     crudini --set /etc/cinder/cinder.conf oslo_concurrency lock_path /var/lib/cinder/tmp
 
     crudini --set /etc/cinder/cinder.conf keymgr encryption_auth_url http://$CTRL_MGMT_IP:5000/v3
 
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://$MGMT_IP:5000
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken identity_url http://$MGMT_IP:35357
+    crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
+    crudini --set /etc/cinder/cinder.conf keystone_authtoken identity_url http://$CTRL_MGMT_IP:35357
 
     crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_plugin password
     crudini --set /etc/cinder/cinder.conf keystone_authtoken project_domain_id default
@@ -452,16 +484,22 @@ function dashboard() {
 
 }
 
+
+
+
+
 function installation() {
     base
-    database
-    mq
-    keystone
-    glance
-    nova_ctrl
-    neutron_ctrl
-    cinder_ctrl
-    dashboard
+    #database
+    #mq
+    #keystone
+    #glance
+    #nova_ctrl
+    #neutron_ctrl
+    #cinder_ctrl
+    #dashboard
+    nova_compute
+    neutron_compute
 }
 
 
