@@ -511,7 +511,14 @@ function _neutron_configure() {
         crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dhcp_driver neutron.agent.linux.dhcp.Dnsmasq
         crudini --set /etc/neutron/dhcp_agent.ini DEFAULT use_namespaces True
         crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dhcp_delete_namespaces True
+
         crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dnsmasq_config_file /etc/neutron/dnsmasq-neutron.conf
+        if [ ! -e "/etc/neutron/dnsmasq-neutron.conf" ]; then
+            echo "dhcp-option-force=26,1454" > /etc/neutron/dnsmasq-neutron.conf
+            chown -R neutron:neutron /etc/neutron
+        fi
+
+        crudini --set /etc/neutron/dhcp_agent.ini DEFAULT debug True
     fi
 
     ## config metadata agent /etc/neutron/metadata_agent.ini
@@ -542,7 +549,7 @@ function neutron_ctrl() {
 
 function neutron_compute() {
     # install neutron components on compute nodes
-    yum install -y openstack-neutron-openvswitch ipset
+    yum install -y openstack-neutron-ml2 openstack-neutron-openvswitch ipset
 
     _neutron_configure
 
