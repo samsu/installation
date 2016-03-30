@@ -3,7 +3,13 @@
 # ubuntu use
 # eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
 # centos use
-MGMT_IP=`ifconfig eth0 |grep 'inet '| cut -f 10 -d " "`
+INTERFACE_MGMT=eth0
+INTERFACE_INT=eth1
+INTERFACE_EXT=eth2
+
+VLAN_RANGES=1000:2000
+INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
+MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
 
 CTRL_MGMT_IP=10.160.37.56
 
@@ -24,14 +30,25 @@ KEYSTONE_U_ADMIN=admin
 KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 REGION=RegionOne
 
+CONFIG_DRIVE=True
+
 IMAGE_FILE=cirros-0.3.4-x86_64-disk.img
 IMAGE_URL=http://download.cirros-cloud.net/0.3.4/$IMAGE_FILE
 IMAGE_NAME='cirros-0.3.4-x86_64'
 
-INTERFACE_EXT=eth2
+ML2_PLUGIN=openvswitch
+TYPE_DR=vxlan
+
+
+ERRTRAP() {
+    echo "[FILE: "$PWD/$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")", LINE: $1] Error: Command or function exited with status $?"
+}
+
 
 function base() {
     set -o xtrace
+
+    trap 'ERRTRAP $LINENO' ERR
 
     yum update -y
     yum upgrade -y
@@ -52,7 +69,7 @@ export OS_USERNAME=$KEYSTONE_U_ADMIN
 export OS_PASSWORD=$KEYSTONE_U_ADMIN_PWD
 export OS_AUTH_URL=http://$CTRL_MGMT_IP:35357/v2.0
 EOF
-
+    source ~/openrc
 }
 
 function database() {
@@ -168,6 +185,7 @@ function keystone() {
     ## TODO: update keystone.conf
     ## scp 10.160.37.51:/root/bak/keystone.conf /etc/keystone/keystone.conf
     crudini --set /etc/keystone/keystone.conf DEFAULT admin_token $ADMIN_TOKEN
+    crudini --set /etc/keystone/keystone.conf DEFAULT debug True
     crudini --set /etc/keystone/keystone.conf database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$CTRL_MGMT_IP/keystone
     crudini --set /etc/keystone/keystone.conf token provider keystone.token.providers.uuid.Provider
     crudini --set /etc/keystone/keystone.conf token driver keystone.token.persistence.backends.sql.Token
@@ -263,11 +281,7 @@ catalog.RegionOne.volumev2.internalURL = http://localhost:8776/v2/$(tenant_id)s
 catalog.RegionOne.volumev2.name = Volume Service
 EOF
 
-
-
-    KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep id | awk '{print $4}')
-
-    source ~/openrc
+    export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
 
 }
 
@@ -275,6 +289,8 @@ EOF
 function glance() {
     ## glance
     yum install -y openstack-glance
+    KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
+
     crudini --set /etc/glance/glance-api.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
     crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
     crudini --set /etc/glance/glance-api.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
@@ -301,7 +317,7 @@ function glance() {
 
     openstack image show $IMAGE_NAME 2>/dev/null
     if [ $? -ne 0 ]; then
-        mkdir /tmp/images
+        mkdir -p /tmp/images
         wget -P /tmp/images $IMAGE_URL
 
         openstack image create --file /tmp/images/$IMAGE_FILE \
@@ -329,6 +345,11 @@ function _nova_configure() {
         crudini --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
         crudini --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $MGMT_IP
         crudini --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
+        if [[ ${CONFIG_DRIVE^^} == 'TRUE' ]]; then
+            crudini --set /etc/nova/nova.conf DEFAULT force_config_drive True
+        else
+            crudini --set /etc/nova/nova.conf DEFAULT force_config_drive False
+        fi
         crudini --set /etc/nova/nova.conf DEFAULT debug True
 
         crudini --set /etc/nova/nova.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
@@ -340,6 +361,15 @@ function _nova_configure() {
         crudini --set /etc/nova/nova.conf glance host=$CTRL_MGMT_IP
         crudini --set /etc/nova/nova.conf libvirt virt_type qemu
 
+        crudini --set /etc/nova/nova.conf neutron url http://$CTRL_MGMT_IP:9696
+        crudini --set /etc/nova/nova.conf neutron auth_url http://$CTRL_MGMT_IP:35357
+        crudini --set /etc/nova/nova.conf neutron auth_plugin password
+        crudini --set /etc/nova/nova.conf neutron project_domain_id default
+        crudini --set /etc/nova/nova.conf neutron user_domain_id default
+        crudini --set /etc/nova/nova.conf neutron region_name $REGION
+        crudini --set /etc/nova/nova.conf neutron project_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set /etc/nova/nova.conf neutron username $KEYSTONE_U_NEUTRON
+        crudini --set /etc/nova/nova.conf neutron password $KEYSTONE_U_PWD_NEUTRON
         crudini --set /etc/nova/nova.conf neutron service_metadata_proxy True
         crudini --set /etc/nova/nova.conf neutron metadata_proxy_shared_secret $METADATA_SECRET
 
@@ -409,15 +439,56 @@ function _neutron_configure() {
 
     ## /etc/neutron/plugins/ml2/ml2_conf.ini
     if [ -e "/etc/neutron/plugins/ml2/ml2_conf.ini" ]; then
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 type_drivers local,vxlan
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 tenant_network_types vxlan
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 mechanism_drivers openvswitch,l2population
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 external_network_type local
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 type_drivers flat,$TYPE_DR
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 tenant_network_types $TYPE_DR
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 mechanism_drivers $ML2_PLUGIN,l2population
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 external_network_type flat
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2_type_vxlan vni_ranges 1:1000
-
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_security_group True
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_ipset True
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini agent root_helper 'sudo neutron-rootwrap /etc/neutron/rootwrap.conf'
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini agent root_helper_daemon 'sudo /usr/bin/neutron-rootwrap-daemon /etc/neutron/rootwrap.conf'
+
+        if [ $ML2_PLUGIN == 'openvswitch' ]; then
+            for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+                if [ -e $file ]; then
+                    crudini --set $file ovs integration_bridge br-int
+                    ## crudini --set $file ovs bridge_mappings external:br-ex
+
+                    if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                        crudini --set $file ovs local_ip $INTERFACE_INT_IP
+                        crudini --set $file ovs tunnel_bridge br-tun
+                        TUNNEL_TYPES=vxlan
+                        crudini --set $file agent tunnel_types $TUNNEL_TYPES
+
+                        ovs-vsctl --may-exist add-br br-tun
+                    fi
+
+                    if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                        crudini --set $file ovs local_ip $INTERFACE_INT_IP
+                        crudini --set $file ovs tunnel_bridge br-tun
+                        if [[ -z $TUNNEL_TYPES ]]; then
+                            TUNNEL_TYPES="gre"
+                         else
+                            TUNNEL_TYPES="$TUNNEL_TYPES,gre"
+                         fi
+                         crudini --set $file agent tunnel_types $TUNNEL_TYPES
+
+                         ovs-vsctl --may-exist add-br br-tun
+                    fi
+
+                    if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                        crudini --set $file ovs network_vlan_ranges physnet1:$VLAN_RANGES
+                        crudini --set $file ovs bridge_mappings physnet1:br-vlan
+
+                        ovs-vsctl --may-exist add-br br-vlan
+                        ovs-vsctl --may-exist add-port br-ex $INTERFACE_INT
+                    fi
+                fi
+            done
+        fi
     fi
 
     if [ ! -e "/etc/neutron/plugin.ini" ]; then
@@ -489,6 +560,14 @@ function neutron_network() {
 
     systemctl enable openvswitch.service
     systemctl restart openvswitch.service
+
+    if [ $ML2_PLUGIN == 'openvswitch' ]; then
+        for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+            if [ -e $file ]; then
+                crudini --set $file ovs bridge_mappings external:br-ex
+            fi
+        done
+    fi
 
     ovs-vsctl --may-exist add-br br-ex
     ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
@@ -566,6 +645,29 @@ function allinone() {
     nova_compute
     neutron_compute
     neutron_network
+}
+
+
+function controller() {
+    database
+    mq
+    keystone
+    glance
+    nova_ctrl
+    neutron_ctrl
+    cinder_ctrl
+    dashboard
+}
+
+
+function network() {
+    neutron_network
+}
+
+
+function compute() {
+    nova_compute
+    neutron_compute
 }
 
 
