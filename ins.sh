@@ -11,7 +11,10 @@ VLAN_RANGES=1000:2000
 INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
 MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
 
+
+
 CTRL_MGMT_IP=10.160.37.56
+NTPSRV=$CTRL_MGMT_IP
 
 MYSQL_ROOT_PASSWORD=root
 RABBIT_USER=guest
@@ -30,6 +33,9 @@ KEYSTONE_U_ADMIN=admin
 KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 REGION=RegionOne
 
+# Enable Distributed Virtual Routers
+DVR=True
+
 CONFIG_DRIVE=True
 
 IMAGE_FILE=cirros-0.3.4-x86_64-disk.img
@@ -45,17 +51,40 @@ ERRTRAP() {
 }
 
 
-function base() {
-    set -o xtrace
+function _ntp() {
 
-    trap 'ERRTRAP $LINENO' ERR
+    yum install -y ntp
+
+    systemctl enable ntpd.service
+    systemctl stop ntpd.service
+
+    ifconfig |grep $NTPSRV >/dev/null
+
+    if [ $? -eq 0 ]; then
+        ntpdate -s ntp.org
+    else
+        sed -i 's/^server 0.centos.pool.ntp.org iburst/server $NTPSRV/g' /etc/ntp.conf
+        sed -i 's/^server 1.centos.pool.ntp.org iburst/# server 1.centos.pool.ntp.org iburst/g' /etc/ntp.conf
+        sed -i 's/^server 2.centos.pool.ntp.org iburst/# server 2.centos.pool.ntp.org iburst/g' /etc/ntp.conf
+        sed -i 's/^server 3.centos.pool.ntp.org iburst/# server 3.centos.pool.ntp.org iburst/g' /etc/ntp.conf
+        ntpdate -s $NTPSRV
+    fi
+    systemctl restart ntpd.service
+}
+
+function base() {
+    trap 'ERRTRAP $LINENO $?' ERR
+
+    set -o xtrace
 
     yum update -y
     yum upgrade -y
 
     yum autoremove -y firewalld
-    yum install -y ntp crudini
+    yum install -y crudini
     yum install -y openstack-selinux
+
+    _ntp
 
     for service in $SERVICES; do
         eval DB_USER_${service^^}=$service
@@ -148,6 +177,10 @@ expect eof
 
         yum erase -y expect
     fi
+
+    # Enable root remote access MySQL
+    mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
+    mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
 
     for service in $SERVICES; do
         mysqlshow -uroot -p$MYSQL_ROOT_PASSWORD $service 2>&1| grep -o "Database: $service" > /dev/nul
@@ -289,7 +322,10 @@ EOF
 function glance() {
     ## glance
     yum install -y openstack-glance
-    KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
+
+    if [ -z "$KEYSTONE_T_ID_SERVICE" ]; then
+        export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
+    fi
 
     crudini --set /etc/glance/glance-api.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
     crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
@@ -358,7 +394,7 @@ function _nova_configure() {
         crudini --set /etc/nova/nova.conf keystone_authtoken admin_user $KEYSTONE_U_NOVA
         crudini --set /etc/nova/nova.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_NOVA
 
-        crudini --set /etc/nova/nova.conf glance host=$CTRL_MGMT_IP
+        crudini --set /etc/nova/nova.conf glance host $CTRL_MGMT_IP
         crudini --set /etc/nova/nova.conf libvirt virt_type qemu
 
         crudini --set /etc/nova/nova.conf neutron url http://$CTRL_MGMT_IP:9696
@@ -405,8 +441,54 @@ function nova_compute() {
 }
 
 
+function _neutron_dvr_configure() {
+    echo "starting _neutron_dvr_configure ..."
+
+    if [[ "${DVR^^}" == 'TRUE' ]]; then
+        if [[ 'neutron_ctrl' =~ "$1" ]]; then
+            # enable dvr
+            crudini --set /etc/neutron/neutron.conf DEFAULT router_distributed True
+        fi
+
+        if [[ 'neutron_network ' =~ "$1" ]]; then
+            crudini --set /etc/neutron/l3_agent.ini DEFAULT agent_mode dvr_snat
+            crudini --set /etc/neutron/l3_agent.ini DEFAULT router_namespaces True
+
+            ovs-vsctl --may-exist add-br br-ex
+            ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
+        fi
+
+        if [[ 'neutron_compute ' =~ "$1" ]]; then
+            yum install -y openstack-neutron
+
+            crudini --set /etc/neutron/l3_agent.ini DEFAULT agent_mode dvr
+            crudini --set /etc/neutron/l3_agent.ini DEFAULT router_namespaces True
+
+            ovs-vsctl --may-exist add-br br-ex
+            ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
+
+            systemctl enable neutron-l3-agent.service
+            systemctl restart neutron-l3-agent.service
+        fi
+
+        if [[ "$ML2_PLUGIN" == 'openvswitch' ]]; then
+            for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+                if [ -e $file ]; then
+                    crudini --set $file ovs tunnel_bridge br-tun
+                    crudini --set $file agent enable_distributed_routing True
+                    crudini --set $file agent l2_population True
+                fi
+            done
+        fi
+    fi
+}
+
+
 function _neutron_configure() {
     ## config neutron.conf
+    if [ -z "$KEYSTONE_T_ID_SERVICE" ]; then
+        export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
+    fi
     if [ -e "/etc/neutron/neutron.conf" ]; then
         crudini --set /etc/neutron/neutron.conf DEFAULT debug True
         crudini --set /etc/neutron/neutron.conf DEFAULT rpc_backend rabbit
@@ -532,13 +614,16 @@ function _neutron_configure() {
         crudini --set /etc/neutron/metadata_agent.ini DEFAULT metadata_proxy_shared_secret $METADATA_SECRET
         crudini --set /etc/neutron/metadata_agent.ini DEFAULT debug True
     fi
+
+    _neutron_dvr_configure $1
 }
+
 
 function neutron_ctrl() {
     # neutron
     yum install -y openstack-neutron openstack-neutron-ml2 which
 
-    _neutron_configure
+    _neutron_configure neutron_ctrl
 
     su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
 
@@ -551,7 +636,7 @@ function neutron_compute() {
     # install neutron components on compute nodes
     yum install -y openstack-neutron-ml2 openstack-neutron-openvswitch ipset
 
-    _neutron_configure
+    _neutron_configure neutron_compute
 
     systemctl restart openstack-nova-compute.service
     systemctl enable openvswitch.service neutron-openvswitch-agent.service
@@ -563,7 +648,7 @@ function neutron_compute() {
 function neutron_network() {
     yum install -y openstack-neutron openstack-neutron-ml2 openstack-neutron-openvswitch
 
-    _neutron_configure
+    _neutron_configure neutron_network
 
     systemctl enable openvswitch.service
     systemctl restart openvswitch.service
@@ -678,6 +763,18 @@ function compute() {
 }
 
 
+function _display() {
+    sudo yum -y install figlet >& /dev/null
+
+    if [[ "$?" != "0" ]]; then
+        echo "Failed to install the package figlet"
+        exit 1
+    fi
+
+    figlet -tf slant The installation is $1
+}
+
+
 function installation() {
     base
     for service in "$@"; do
@@ -691,5 +788,6 @@ function timestamp {
     awk '{ print strftime("%Y-%m-%d %H:%M:%S | "), $0; fflush(); }'
 }
 
+_display starting
 installation $@ | timestamp
-
+_display completed
