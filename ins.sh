@@ -11,8 +11,6 @@ VLAN_RANGES=1000:2000
 INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
 MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
 
-
-
 CTRL_MGMT_IP=10.160.37.56
 NTPSRV=$CTRL_MGMT_IP
 
