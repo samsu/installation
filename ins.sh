@@ -761,6 +761,55 @@ function compute() {
 }
 
 
+function help() {
+    usage="$(basename "$0") [-h] [rolenames]
+
+This script help you to install specific openstack roles to the machine
+
+rolenames could be any one or combo of the follow roles:
+    allinone
+    controller
+    network
+    compute
+    database
+    mq
+    dashboard
+    keystone
+    glance
+    nova_ctrl
+    nova_compute
+    neutron_ctrl
+    neutron_compute
+    neutron_network
+    cinder_ctrl
+
+examples:
+    # install all openstack stuff in one machine
+    ./ins.sh allinone
+
+    # install nova controller and neutron controller in the machine
+    ./ins.sh nova_ctrl neutron_ctrl
+"
+
+    while getopts ':h' option; do
+      case "$option" in
+        h) echo "$usage"
+           exit
+           ;;
+        :) printf "missing argument for -%s\n" "$OPTARG" >&2
+           echo "$usage" >&2
+           exit 1
+           ;;
+       \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+           echo "$usage" >&2
+           exit 1
+           ;;
+      esac
+    done
+    shift $((OPTIND - 1))
+}
+
+
 function _display() {
     sudo yum -y install figlet >& /dev/null
 
@@ -786,6 +835,7 @@ function timestamp {
     awk '{ print strftime("%Y-%m-%d %H:%M:%S | "), $0; fflush(); }'
 }
 
+help $@
 _display starting
 installation $@ | timestamp
 _display completed
