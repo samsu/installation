@@ -1,5 +1,6 @@
 #!/bin/bash
 
+###########################################################################
 # ubuntu use
 # eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
 # centos use
@@ -43,6 +44,7 @@ IMAGE_NAME='cirros-0.3.4-x86_64'
 ML2_PLUGIN=openvswitch
 TYPE_DR=vxlan
 
+###########################################################################
 
 ERRTRAP() {
     echo "[FILE: "$PWD/$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")", LINE: $1] Error: Command or function exited with status $?"
@@ -764,7 +766,9 @@ function compute() {
 function help() {
     usage="$(basename "$0") [-h] [rolenames]
 
-This script help you to install specific openstack roles to the machine.
+This script help you to install specific openstack roles to the machine,
+before run the script, you need to update the environment variables in the
+head of the script according to your setup.
 
 The rolenames could be any one or combo of the follow role set.
 a) Openstack all-in-one installation role:
