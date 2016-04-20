@@ -764,13 +764,18 @@ function compute() {
 function help() {
     usage="$(basename "$0") [-h] [rolenames]
 
-This script help you to install specific openstack roles to the machine
+This script help you to install specific openstack roles to the machine.
 
-rolenames could be any one or combo of the follow roles:
+The rolenames could be any one or combo of the follow role set.
+a) Openstack all-in-one installation role:
     allinone
+
+b) Openstack multi-nodes installation roles:
     controller
     network
     compute
+
+c) Openstack component installation roles:
     database
     mq
     dashboard
@@ -783,11 +788,11 @@ rolenames could be any one or combo of the follow roles:
     neutron_network
     cinder_ctrl
 
-examples:
-    # install all openstack stuff in one machine
+Examples:
+    # Install all openstack stuff in one machine
     ./ins.sh allinone
 
-    # install nova controller and neutron controller in the machine
+    # Install nova controller and neutron controller in the machine
     ./ins.sh nova_ctrl neutron_ctrl
 "
 
