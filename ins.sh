@@ -65,7 +65,7 @@ function _ntp() {
     if [ $? -eq 0 ]; then
         ntpdate -s ntp.org
     else
-        sed -i 's/^server 0.centos.pool.ntp.org iburst/server $NTPSRV/g' /etc/ntp.conf
+        sed -i.bak 's/^server 0.centos.pool.ntp.org iburst/server $NTPSRV/g' /etc/ntp.conf
         sed -i 's/^server 1.centos.pool.ntp.org iburst/# server 1.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 2.centos.pool.ntp.org iburst/# server 2.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 3.centos.pool.ntp.org iburst/# server 3.centos.pool.ntp.org iburst/g' /etc/ntp.conf
@@ -203,7 +203,7 @@ function mq() {
     ## install rabbitmq
     yum install -y rabbitmq-server
 
-    sed -i "s#%% {tcp_listeners, \[5672\]},#{tcp_listeners, \[{\"$MGMT_IP\", 5672}\]}#g" /etc/rabbitmq/rabbitmq.config
+    sed -i.bak "s#%% {tcp_listeners, \[5672\]},#{tcp_listeners, \[{\"$MGMT_IP\", 5672}\]}#g" /etc/rabbitmq/rabbitmq.config
 
     systemctl enable rabbitmq-server.service
     systemctl restart rabbitmq-server.service
@@ -714,7 +714,7 @@ function cinder_ctrl() {
 
 function dashboard() {
     yum install -y openstack-dashboard memcached
-    sed -i "s#OPENSTACK_HOST = \"127.0.0.1\"#OPENSTACK_HOST = \"$CTRL_MGMT_IP\"#g" /etc/openstack-dashboard/local_settings
+    sed -i.bak "s#OPENSTACK_HOST = \"127.0.0.1\"#OPENSTACK_HOST = \"$CTRL_MGMT_IP\"#g" /etc/openstack-dashboard/local_settings
     sed -i "s#ALLOWED_HOSTS = \['horizon.example.com', 'localhost'\]#ALLOWED_HOSTS = \['*', \]#g" /etc/openstack-dashboard/local_settings
     sed -i "s#'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',#'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',\n\t'LOCATION': '127.0.0.1:11211',#g" /etc/openstack-dashboard/local_settings
     sed -i "s/^#OPENSTACK_API_VERSIONS = {/OPENSTACK_API_VERSIONS = {/g" /etc/openstack-dashboard/local_settings
