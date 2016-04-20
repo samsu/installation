@@ -4,6 +4,9 @@
 # ubuntu use
 # eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
 # centos use
+
+CTRL_MGMT_IP=10.160.37.56
+
 INTERFACE_MGMT=eth0
 INTERFACE_INT=eth1
 INTERFACE_EXT=eth2
@@ -12,7 +15,6 @@ VLAN_RANGES=1000:2000
 INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
 MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
 
-CTRL_MGMT_IP=10.160.37.56
 NTPSRV=$CTRL_MGMT_IP
 
 MYSQL_ROOT_PASSWORD=root
@@ -32,7 +34,7 @@ KEYSTONE_U_ADMIN=admin
 KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 REGION=RegionOne
 
-# Enable Distributed Virtual Routers
+# Enable Distributed Virtual Routers(True or False)
 DVR=True
 
 CONFIG_DRIVE=True
@@ -201,7 +203,7 @@ function mq() {
     ## install rabbitmq
     yum install -y rabbitmq-server
 
-   ##sed -i "s#%% {tcp_listeners, [{\"127.0.0.1\", 5672},\n   %%                  {\"::1\",       5672}]},#{tcp_listeners, [{\"$MGMT_IP\", 5672}]}#g" /etc/rabbitmq/rabbitmq.config
+    sed -i "s#%% {tcp_listeners, \[5672\]},#{tcp_listeners, \[{\"$MGMT_IP\", 5672}\]}#g" /etc/rabbitmq/rabbitmq.config
 
     systemctl enable rabbitmq-server.service
     systemctl restart rabbitmq-server.service
