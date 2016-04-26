@@ -46,6 +46,8 @@ IMAGE_NAME='cirros-0.3.4-x86_64'
 ML2_PLUGIN=openvswitch
 TYPE_DR=vxlan
 
+INS_KERNELS=2
+
 ###########################################################################
 
 ERRTRAP() {
@@ -82,9 +84,18 @@ function base() {
     yum update -y
     yum upgrade -y
 
+    # set installed Kernel limits(INS_KERNELS, default 2) and clean up old Kernels
+    crudini --set /etc/yum.conf main installonly_limit $INS_KERNELS
+    cur_kernels=$(rpm -q kernel | wc -l)
+    if [ "$cur_kernels" -gt "$INS_KERNELS" ]; then
+        yum install -y yum-utils
+        package-cleanup -y --oldkernels --count=$INS_KERNELS
+    fi
+
     yum autoremove -y firewalld
     yum install -y crudini
-    yum install -y openstack-selinux
+    yum install -y openstack-selinux python-pip
+    pip install --upgrade pip
 
     _ntp
 
@@ -269,29 +280,37 @@ function keystone() {
                 openstack endpoint create --region $REGION identity public http://$CTRL_MGMT_IP:5000/v2.0
                 openstack endpoint create --region $REGION identity internal http://$CTRL_MGMT_IP:5000/v2.0
                 openstack endpoint create --region $REGION identity admin http://$CTRL_MGMT_IP:35357/v2.0
-                continue
+
+                openstack service create --name keystonev3 --description "OpenStack Identity v3" identityv3
+                openstack endpoint create --region $REGION identityv3 public http://$CTRL_MGMT_IP:5000/v3.0
+                openstack endpoint create --region $REGION identityv3 internal http://$CTRL_MGMT_IP:5000/v3.0
+                openstack endpoint create --region $REGION identityv3 admin http://$CTRL_MGMT_IP:35357/v3.0
+
             elif [ $service == 'glance' ] ; then
                 openstack service create --name glance --description "OpenStack Image service" image
                 openstack endpoint create --region $REGION image public http://$CTRL_MGMT_IP:9292
                 openstack endpoint create --region $REGION image internal http://$CTRL_MGMT_IP:9292
                 openstack endpoint create --region $REGION image admin http://$CTRL_MGMT_IP:9292
+
             elif  [ $service == 'nova' ] ; then
                 openstack service create --name nova --description "OpenStack Compute" compute
                 openstack endpoint create --region $REGION compute public http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
                 openstack endpoint create --region $REGION compute internal http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
                 openstack endpoint create --region $REGION compute admin http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
+
             elif  [ $service == 'neutron' ] ; then
                 openstack service create --name neutron --description "OpenStack Networking" network
                 openstack endpoint create --region $REGION network public http://$CTRL_MGMT_IP:9696
                 openstack endpoint create --region $REGION network internal http://$CTRL_MGMT_IP:9696
                 openstack endpoint create --region $REGION network admin http://$CTRL_MGMT_IP:9696
+
             elif  [ $service == 'cinder' ] ; then
                 openstack service create --name cinder --description "OpenStack Volume Service" volume
                 openstack endpoint create --region $REGION volume public http://$CTRL_MGMT_IP:8776/v1/%\(tenant_id\)s
                 openstack endpoint create --region $REGION volume internal http://$CTRL_MGMT_IP:8776/v1/%\(tenant_id\)s
                 openstack endpoint create --region $REGION volume admin http://$CTRL_MGMT_IP:8776/v1/%\(tenant_id\)s
 
-                openstack service create --name cinderv2 --description "OpenStack Volume Service" volumev2
+                openstack service create --name cinderv2 --description "OpenStack Volume Service v2" volumev2
                 openstack endpoint create --region $REGION volumev2 public http://$CTRL_MGMT_IP:8776/v2/%\(tenant_id\)s
                 openstack endpoint create --region $REGION volumev2 internal http://$CTRL_MGMT_IP:8776/v2/%\(tenant_id\)s
                 openstack endpoint create --region $REGION volumev2 admin http://$CTRL_MGMT_IP:8776/v2/%\(tenant_id\)s
@@ -693,8 +712,7 @@ function cinder_ctrl() {
     crudini --set /etc/cinder/cinder.conf keymgr encryption_auth_url http://$CTRL_MGMT_IP:5000/v3
 
     crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken identity_url http://$CTRL_MGMT_IP:35357
-
+    crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
     crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_plugin password
     crudini --set /etc/cinder/cinder.conf keystone_authtoken project_domain_id default
     crudini --set /etc/cinder/cinder.conf keystone_authtoken user_domain_id default
@@ -766,22 +784,22 @@ function compute() {
 
 
 function help() {
-    usage="$(basename "$0") [-h] [rolenames]
+    usage="./$(basename "$0") [-h] [rolenames]
 
 This script help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
 head of the script according to your setup.
 
 The rolenames could be any one or combo of the follow role set.
-a) Openstack all-in-one installation role:
+a) Openstack all-in-one installation role name list:
     allinone
 
-b) Openstack multi-nodes installation roles:
+b) Openstack multi-nodes installation role name list:
     controller
     network
     compute
 
-c) Openstack component installation roles:
+c) Openstack component installation role name list:
     database
     mq
     dashboard
@@ -795,12 +813,17 @@ c) Openstack component installation roles:
     cinder_ctrl
 
 Examples:
-    # Install all openstack stuff in one machine
+    # Install all openstack stuff(allinone role) in one machine
     ./ins.sh allinone
 
-    # Install nova controller and neutron controller in the machine
+    # Install two roles(nova controller and neutron controller) in a machine
     ./ins.sh nova_ctrl neutron_ctrl
 "
+
+    if [ "$#" -eq 0 ]; then
+        echo "$usage"
+        exit
+    fi
 
     while getopts ':h' option; do
       case "$option" in
@@ -829,7 +852,11 @@ function _display() {
         exit 1
     fi
 
-    figlet -tf slant The installation is $1
+    if [[ "$*" == "starting" ]]; then
+        figlet -tf slant Openstack installer
+    else
+        figlet -tf slant Openstack installation $1
+    fi
 }
 
 
@@ -846,7 +873,14 @@ function timestamp {
     awk '{ print strftime("%Y-%m-%d %H:%M:%S | "), $0; fflush(); }'
 }
 
-help $@
-_display starting
-installation $@ | timestamp
-_display completed
+
+function main {
+    help $@
+    _display starting
+    installation $@ | timestamp
+    _display completed
+}
+
+
+main $@
+
