@@ -535,6 +535,10 @@ function _neutron_configure() {
 
         crudini --set /etc/neutron/neutron.conf database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$CTRL_MGMT_IP/neutron
 
+        crudini --del /etc/neutron/neutron.conf keystone_authtoken identity_uri
+        crudini --del /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name
+        crudini --del /etc/neutron/neutron.conf keystone_authtoken admin_user
+        crudini --del /etc/neutron/neutron.conf keystone_authtoken admin_password
         crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
         crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
         crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_plugin password
@@ -716,12 +720,15 @@ function cinder_ctrl() {
 
     crudini --set /etc/cinder/cinder.conf keymgr encryption_auth_url http://$CTRL_MGMT_IP:5000/v3
 
+    crudini --del /etc/cinder/cinder.conf keystone_authtoken identity_uri
+    crudini --del /etc/cinder/cinder.conf keystone_authtoken admin_tenant_name
+    crudini --del /etc/cinder/cinder.conf keystone_authtoken admin_user
+    crudini --del /etc/cinder/cinder.conf keystone_authtoken admin_password
     crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
     crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
     crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_plugin password
     crudini --set /etc/cinder/cinder.conf keystone_authtoken project_domain_id default
     crudini --set /etc/cinder/cinder.conf keystone_authtoken user_domain_id default
-
     crudini --set /etc/cinder/cinder.conf keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
     crudini --set /etc/cinder/cinder.conf keystone_authtoken username $KEYSTONE_U_CINDER
     crudini --set /etc/cinder/cinder.conf keystone_authtoken password $KEYSTONE_U_PWD_CINDER
