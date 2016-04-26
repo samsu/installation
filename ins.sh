@@ -47,6 +47,11 @@ ML2_PLUGIN=openvswitch
 TYPE_DR=vxlan
 
 INS_KERNELS=2
+LOGIN_INFO="
+Openstack dashboard url: http://$CTRL_MGMT_IP/dashboard
+username: $KEYSTONE_U_ADMIN
+password: $KEYSTONE_U_ADMIN_PWD
+"
 
 ###########################################################################
 
@@ -854,6 +859,11 @@ function _display() {
 
     if [[ "$*" == "starting" ]]; then
         figlet -tf slant Openstack installer
+
+    elif [[ "$*" == "completed" ]]; then
+        figlet -tf slant Openstack installation $1
+        echo "$LOGIN_INFO"
+
     else
         figlet -tf slant Openstack installation $1
     fi
