@@ -48,7 +48,8 @@ TYPE_DR=vxlan
 
 INS_KERNELS=2
 LOGIN_INFO="
-Openstack dashboard url: http://$CTRL_MGMT_IP/dashboard
+After all Openstack roles are installed, you can access
+Openstack dashboard at: http://$CTRL_MGMT_IP/dashboard
 username: $KEYSTONE_U_ADMIN
 password: $KEYSTONE_U_ADMIN_PWD
 "
