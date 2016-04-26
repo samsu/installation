@@ -48,7 +48,7 @@ TYPE_DR=vxlan
 
 INS_KERNELS=2
 LOGIN_INFO="
-After all Openstack roles are installed, you can access
+After all Openstack roles are installed, you can access the
 Openstack dashboard at: http://$CTRL_MGMT_IP/dashboard
 username: $KEYSTONE_U_ADMIN
 password: $KEYSTONE_U_ADMIN_PWD
