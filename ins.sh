@@ -68,8 +68,9 @@ password: $KEYSTONE_U_ADMIN_PWD
 
 function ERRTRAP() {
     FILENAME="$PWD/$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
-    INFO="[FILE: $FILENAME, LINE: $1] Error: The following command or function exited with status $? \n
-    $(sed -n $1p $FILENAME) \n
+    INFO="[FILE: $FILENAME, LINE: $1] Error: The following command or function exited with status $2
+    $(sed -n $1p $FILENAME)
+
 "
     echo -e "$INFO"
 }
