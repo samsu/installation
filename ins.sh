@@ -7,21 +7,21 @@
 
 CTRL_MGMT_IP=10.160.37.56
 
-INTERFACE_MGMT=eth0
-INTERFACE_INT=eth1
-INTERFACE_EXT=eth2
+INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
+INTERFACE_INT=${INTERFACE_INT:-eth1}
+INTERFACE_EXT=${INTERFACE_EXT:-eth2}
 
-VLAN_RANGES=1000:2000
+VLAN_RANGES=${VLAN_RANGES:-1000:2000}
 INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
 MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
 
-NTPSRV=$CTRL_MGMT_IP
+NTPSRV=${NTPSRV:-$CTRL_MGMT_IP}
 
-MYSQL_ROOT_PASSWORD=root
-RABBIT_USER=guest
-RABBIT_PASS=$RABBIT_USER
-SERVICES="nova keystone glance neutron cinder"
-ADMIN_TOKEN=abc012345678909876543210cba
+MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+RABBIT_USER=${RABBIT_USER:-guest}
+RABBIT_PASS=${RABBIT_PASS:-$RABBIT_USER}
+SERVICES=${SERVICES:-"nova keystone glance neutron cinder"}
+ADMIN_TOKEN=${ADMIN_TOKEN:-abc012345678909876543210cba}
 METADATA_SECRET=metadata_shared_secret
 
 KEYSTONE_T_NAME_ADMIN=admin
@@ -32,21 +32,31 @@ KEYSTONE_R_NAME_MEMBER=_member_
 
 KEYSTONE_U_ADMIN=admin
 KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
-REGION=RegionOne
+
+REGION=${REGION:-RegionOne}
 
 # Enable Distributed Virtual Routers(True or False)
-DVR=True
+DVR=${DVR:-True}
 
-CONFIG_DRIVE=True
+CONFIG_DRIVE=${CONFIG_DRIVE:-True}
 
-IMAGE_FILE=cirros-0.3.4-x86_64-disk.img
-IMAGE_URL=http://download.cirros-cloud.net/0.3.4/$IMAGE_FILE
-IMAGE_NAME='cirros-0.3.4-x86_64'
+# cirros image
+IMAGE_FILE=${IMAGE_FILE:-"cirros-0.3.4-x86_64-disk.img"}
+IMAGE_URL=${IMAGE_URL:-"http://download.cirros-cloud.net/0.3.4/$IMAGE_FILE"}
+IMAGE_NAME=${IMAGE_NAME:-'cirros-0.3.4-x86_64'}
 
-ML2_PLUGIN=openvswitch
-TYPE_DR=vxlan
+# ml2 plugin configuration
+ML2_PLUGIN=${ML2_PLUGIN:-openvswitch}
+TYPE_DR=${TYPE_DR:-vxlan}
 
-INS_KERNELS=2
+# config file path
+KEYSTONE_CONF=${KEYSTONE_CONF:-"/etc/keystone/keystone.conf"}
+NOVA_CONF=${NOVA_CONF:-"/etc/nova/nova.conf"}
+NEUTRON_CONF=${NEUTRON_CONF:-"/etc/neutron/neutron.conf"}
+CINDER_CONF=${CINDER_CONF:-"/etc/cinder/cinder.conf"}
+
+INS_KERNELS=${INS_KERNELS:-2}
+
 LOGIN_INFO="
 After all Openstack roles are installed, you can access the
 Openstack dashboard at: http://$CTRL_MGMT_IP/dashboard
@@ -56,8 +66,12 @@ password: $KEYSTONE_U_ADMIN_PWD
 
 ###########################################################################
 
-ERRTRAP() {
-    echo "[FILE: "$PWD/$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")", LINE: $1] Error: Command or function exited with status $?"
+function ERRTRAP() {
+    FILENAME="$PWD/$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
+    INFO="[FILE: $FILENAME, LINE: $1] Error: The following command or function exited with status $? \n
+    $(sed -n $1p $FILENAME) \n
+"
+    echo -e "$INFO"
 }
 
 
@@ -100,7 +114,7 @@ function base() {
 
     yum autoremove -y firewalld
     yum install -y crudini
-    yum install -y openstack-selinux python-pip
+    yum install -y openstack-selinux python-pip python-openstackclient
     pip install --upgrade pip
 
     _ntp
@@ -235,13 +249,13 @@ function keystone() {
     ##python-keystoneclient
 
     ## TODO: update keystone.conf
-    ## scp 10.160.37.51:/root/bak/keystone.conf /etc/keystone/keystone.conf
-    crudini --set /etc/keystone/keystone.conf DEFAULT admin_token $ADMIN_TOKEN
-    crudini --set /etc/keystone/keystone.conf DEFAULT debug True
-    crudini --set /etc/keystone/keystone.conf database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$CTRL_MGMT_IP/keystone
-    crudini --set /etc/keystone/keystone.conf token provider keystone.token.providers.uuid.Provider
-    crudini --set /etc/keystone/keystone.conf token driver keystone.token.persistence.backends.sql.Token
-    crudini --set /etc/keystone/keystone.conf revoke driver keystone.contrib.revoke.backends.sql.Revoke
+    ## scp 10.160.37.51:/root/bak/keystone.conf $KEYSTONE_CONF
+    crudini --set $KEYSTONE_CONF DEFAULT admin_token $ADMIN_TOKEN
+    crudini --set $KEYSTONE_CONF DEFAULT debug True
+    crudini --set $KEYSTONE_CONF database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$CTRL_MGMT_IP/keystone
+    crudini --set $KEYSTONE_CONF token provider keystone.token.providers.uuid.Provider
+    crudini --set $KEYSTONE_CONF token driver keystone.token.persistence.backends.sql.Token
+    crudini --set $KEYSTONE_CONF revoke driver keystone.contrib.revoke.backends.sql.Revoke
 
     keystone-manage pki_setup --keystone-user keystone --keystone-group keystone
 
@@ -394,49 +408,49 @@ function glance() {
 
 
 function _nova_configure() {
-    if [ -e "/etc/nova/nova.conf" ]; then
-        crudini --set /etc/nova/nova.conf database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
-        crudini --set /etc/nova/nova.conf DEFAULT rpc_backend rabbit
-        crudini --set /etc/nova/nova.conf DEFAULT rabbit_host $CTRL_MGMT_IP
-        crudini --set /etc/nova/nova.conf DEFAULT rabbit_password $RABBIT_PASS
-        crudini --set /etc/nova/nova.conf DEFAULT auth_strategy keystone
-        crudini --set /etc/nova/nova.conf DEFAULT network_api_class nova.network.neutronv2.api.API
-        crudini --set /etc/nova/nova.conf DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
-        crudini --set /etc/nova/nova.conf DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
-        crudini --set /etc/nova/nova.conf DEFAULT my_ip $MGMT_IP
-        crudini --set /etc/nova/nova.conf DEFAULT vnc_enabled True
-        crudini --set /etc/nova/nova.conf DEFAULT vncserver_listen 0.0.0.0
-        crudini --set /etc/nova/nova.conf DEFAULT vncserver_proxyclient_address $MGMT_IP
-        crudini --set /etc/nova/nova.conf DEFAULT novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
+    if [ -e "$NOVA_CONF" ]; then
+        crudini --set $NOVA_CONF database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
+        crudini --set $NOVA_CONF DEFAULT rpc_backend rabbit
+        crudini --set $NOVA_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
+        crudini --set $NOVA_CONF DEFAULT rabbit_password $RABBIT_PASS
+        crudini --set $NOVA_CONF DEFAULT auth_strategy keystone
+        crudini --set $NOVA_CONF DEFAULT network_api_class nova.network.neutronv2.api.API
+        crudini --set $NOVA_CONF DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
+        crudini --set $NOVA_CONF DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+        crudini --set $NOVA_CONF DEFAULT my_ip $MGMT_IP
+        crudini --set $NOVA_CONF DEFAULT vnc_enabled True
+        crudini --set $NOVA_CONF DEFAULT vncserver_listen 0.0.0.0
+        crudini --set $NOVA_CONF DEFAULT vncserver_proxyclient_address $MGMT_IP
+        crudini --set $NOVA_CONF DEFAULT novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
         if [[ ${CONFIG_DRIVE^^} == 'TRUE' ]]; then
-            crudini --set /etc/nova/nova.conf DEFAULT force_config_drive True
+            crudini --set $NOVA_CONF DEFAULT force_config_drive True
         else
-            crudini --set /etc/nova/nova.conf DEFAULT force_config_drive False
+            crudini --set $NOVA_CONF DEFAULT force_config_drive False
         fi
-        crudini --set /etc/nova/nova.conf DEFAULT debug True
+        crudini --set $NOVA_CONF DEFAULT debug True
 
-        crudini --set /etc/nova/nova.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
-        crudini --set /etc/nova/nova.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
-        crudini --set /etc/nova/nova.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
-        crudini --set /etc/nova/nova.conf keystone_authtoken admin_user $KEYSTONE_U_NOVA
-        crudini --set /etc/nova/nova.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_NOVA
+        crudini --set $NOVA_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
+        crudini --set $NOVA_CONF keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
+        crudini --set $NOVA_CONF keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set $NOVA_CONF keystone_authtoken admin_user $KEYSTONE_U_NOVA
+        crudini --set $NOVA_CONF keystone_authtoken admin_password $KEYSTONE_U_PWD_NOVA
 
-        crudini --set /etc/nova/nova.conf glance host $CTRL_MGMT_IP
-        crudini --set /etc/nova/nova.conf libvirt virt_type qemu
+        crudini --set $NOVA_CONF glance host $CTRL_MGMT_IP
+        crudini --set $NOVA_CONF libvirt virt_type qemu
 
-        crudini --set /etc/nova/nova.conf neutron url http://$CTRL_MGMT_IP:9696
-        crudini --set /etc/nova/nova.conf neutron auth_url http://$CTRL_MGMT_IP:35357
-        crudini --set /etc/nova/nova.conf neutron auth_plugin password
-        crudini --set /etc/nova/nova.conf neutron project_domain_id default
-        crudini --set /etc/nova/nova.conf neutron user_domain_id default
-        crudini --set /etc/nova/nova.conf neutron region_name $REGION
-        crudini --set /etc/nova/nova.conf neutron project_name $KEYSTONE_T_NAME_SERVICE
-        crudini --set /etc/nova/nova.conf neutron username $KEYSTONE_U_NEUTRON
-        crudini --set /etc/nova/nova.conf neutron password $KEYSTONE_U_PWD_NEUTRON
-        crudini --set /etc/nova/nova.conf neutron service_metadata_proxy True
-        crudini --set /etc/nova/nova.conf neutron metadata_proxy_shared_secret $METADATA_SECRET
+        crudini --set $NOVA_CONF neutron url http://$CTRL_MGMT_IP:9696
+        crudini --set $NOVA_CONF neutron auth_url http://$CTRL_MGMT_IP:35357
+        crudini --set $NOVA_CONF neutron auth_plugin password
+        crudini --set $NOVA_CONF neutron project_domain_id default
+        crudini --set $NOVA_CONF neutron user_domain_id default
+        crudini --set $NOVA_CONF neutron region_name $REGION
+        crudini --set $NOVA_CONF neutron project_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set $NOVA_CONF neutron username $KEYSTONE_U_NEUTRON
+        crudini --set $NOVA_CONF neutron password $KEYSTONE_U_PWD_NEUTRON
+        crudini --set $NOVA_CONF neutron service_metadata_proxy True
+        crudini --set $NOVA_CONF neutron metadata_proxy_shared_secret $METADATA_SECRET
 
-        crudini --set /etc/nova/nova.conf cinder os_region_name $REGION
+        crudini --set $NOVA_CONF cinder os_region_name $REGION
     fi
 }
 
@@ -474,10 +488,10 @@ function _neutron_dvr_configure() {
     if [[ "${DVR^^}" == 'TRUE' ]]; then
         if [[ 'neutron_ctrl' =~ "$1" ]]; then
             # enable dvr
-            crudini --set /etc/neutron/neutron.conf DEFAULT router_distributed True
+            crudini --set $NEUTRON_CONF DEFAULT router_distributed True
         fi
 
-        if [[ 'neutron_network ' =~ "$1" ]]; then
+        if [[ 'neutron_network' =~ "$1" ]]; then
             crudini --set /etc/neutron/l3_agent.ini DEFAULT agent_mode dvr_snat
             crudini --set /etc/neutron/l3_agent.ini DEFAULT router_namespaces True
 
@@ -485,7 +499,7 @@ function _neutron_dvr_configure() {
             ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
         fi
 
-        if [[ 'neutron_compute ' =~ "$1" ]]; then
+        if [[ 'neutron_compute' =~ "$1" ]]; then
             yum install -y openstack-neutron
 
             crudini --set /etc/neutron/l3_agent.ini DEFAULT agent_mode dvr
@@ -516,38 +530,39 @@ function _neutron_configure() {
     if [ -z "$KEYSTONE_T_ID_SERVICE" ]; then
         export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
     fi
-    if [ -e "/etc/neutron/neutron.conf" ]; then
-        crudini --set /etc/neutron/neutron.conf DEFAULT debug True
-        crudini --set /etc/neutron/neutron.conf DEFAULT rpc_backend rabbit
-        crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_host $CTRL_MGMT_IP
-        crudini --set /etc/neutron/neutron.conf DEFAULT rabbit_password $RABBIT_PASS
-        crudini --set /etc/neutron/neutron.conf DEFAULT auth_strategy keystone
-        crudini --set /etc/neutron/neutron.conf DEFAULT core_plugin ml2
-        crudini --set /etc/neutron/neutron.conf DEFAULT service_plugins router
-        crudini --set /etc/neutron/neutron.conf DEFAULT allow_overlapping_ips True
-        crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_status_changes True
-        crudini --set /etc/neutron/neutron.conf DEFAULT notify_nova_on_port_data_changes True
-        crudini --set /etc/neutron/neutron.conf DEFAULT nova_url http://$CTRL_MGMT_IP:8774/v2
-        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_auth_url http://$CTRL_MGMT_IP:35357/v2.0/
-        crudini --set /etc/neutron/neutron.conf DEFAULT nova_region_name regionOne
-        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_username $KEYSTONE_U_NOVA
-        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_tenant_id $KEYSTONE_T_ID_SERVICE
-        crudini --set /etc/neutron/neutron.conf DEFAULT nova_admin_password $KEYSTONE_U_PWD_NOVA
+    # $NEUTRON_CONF configuration
+    if [ -e "$NEUTRON_CONF" ]; then
+        crudini --set $NEUTRON_CONF DEFAULT debug True
+        crudini --set $NEUTRON_CONF DEFAULT rpc_backend rabbit
+        crudini --set $NEUTRON_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
+        crudini --set $NEUTRON_CONF DEFAULT rabbit_password $RABBIT_PASS
+        crudini --set $NEUTRON_CONF DEFAULT auth_strategy keystone
+        crudini --set $NEUTRON_CONF DEFAULT core_plugin ml2
+        crudini --set $NEUTRON_CONF DEFAULT service_plugins router
+        crudini --set $NEUTRON_CONF DEFAULT allow_overlapping_ips True
+        crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_status_changes True
+        crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_data_changes True
+        crudini --set $NEUTRON_CONF DEFAULT nova_url http://$CTRL_MGMT_IP:8774/v2
+        crudini --set $NEUTRON_CONF DEFAULT nova_admin_auth_url http://$CTRL_MGMT_IP:35357/v2.0/
+        crudini --set $NEUTRON_CONF DEFAULT nova_region_name regionOne
+        crudini --set $NEUTRON_CONF DEFAULT nova_admin_username $KEYSTONE_U_NOVA
+        crudini --set $NEUTRON_CONF DEFAULT nova_admin_tenant_id $KEYSTONE_T_ID_SERVICE
+        crudini --set $NEUTRON_CONF DEFAULT nova_admin_password $KEYSTONE_U_PWD_NOVA
 
-        crudini --set /etc/neutron/neutron.conf database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$CTRL_MGMT_IP/neutron
+        crudini --set $NEUTRON_CONF database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$CTRL_MGMT_IP/neutron
 
-        crudini --del /etc/neutron/neutron.conf keystone_authtoken identity_uri
-        crudini --del /etc/neutron/neutron.conf keystone_authtoken admin_tenant_name
-        crudini --del /etc/neutron/neutron.conf keystone_authtoken admin_user
-        crudini --del /etc/neutron/neutron.conf keystone_authtoken admin_password
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken auth_plugin password
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken project_domain_id default
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken user_domain_id default
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken username $KEYSTONE_U_NEUTRON
-        crudini --set /etc/neutron/neutron.conf keystone_authtoken password $KEYSTONE_U_PWD_NEUTRON
+        crudini --del $NEUTRON_CONF keystone_authtoken identity_uri
+        crudini --del $NEUTRON_CONF keystone_authtoken admin_tenant_name
+        crudini --del $NEUTRON_CONF keystone_authtoken admin_user
+        crudini --del $NEUTRON_CONF keystone_authtoken admin_password
+        crudini --set $NEUTRON_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
+        crudini --set $NEUTRON_CONF keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
+        crudini --set $NEUTRON_CONF keystone_authtoken auth_plugin password
+        crudini --set $NEUTRON_CONF keystone_authtoken project_domain_id default
+        crudini --set $NEUTRON_CONF keystone_authtoken user_domain_id default
+        crudini --set $NEUTRON_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set $NEUTRON_CONF keystone_authtoken username $KEYSTONE_U_NEUTRON
+        crudini --set $NEUTRON_CONF keystone_authtoken password $KEYSTONE_U_PWD_NEUTRON
     fi
 
     ## /etc/neutron/plugins/ml2/ml2_conf.ini
@@ -597,7 +612,7 @@ function _neutron_configure() {
                         crudini --set $file ovs bridge_mappings physnet1:br-vlan
 
                         ovs-vsctl --may-exist add-br br-vlan
-                        ovs-vsctl --may-exist add-port br-ex $INTERFACE_INT
+                        ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
                     fi
                 fi
             done
@@ -656,7 +671,7 @@ function neutron_ctrl() {
 
     _neutron_configure neutron_ctrl
 
-    su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+    su -s /bin/sh -c "neutron-db-manage --config-file $NEUTRON_CONF --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
 
     systemctl enable neutron-server.service
     systemctl restart neutron-server.service
@@ -708,31 +723,31 @@ function cinder_ctrl() {
     # cinder ctrl
     yum install -y openstack-cinder
 
-    crudini --set /etc/cinder/cinder.conf database connection mysql://$DB_USER_CINDER:$DB_PWD_CINDER@$CTRL_MGMT_IP/cinder
-    crudini --set /etc/cinder/cinder.conf DEFAULT rpc_backend rabbit
-    crudini --set /etc/cinder/cinder.conf DEFAULT auth_strategy keystone
-    crudini --set /etc/cinder/cinder.conf DEFAULT my_ip $MGMT_IP
-    crudini --set /etc/cinder/cinder.conf DEFAULT debug True
+    crudini --set $CINDER_CONF database connection mysql://$DB_USER_CINDER:$DB_PWD_CINDER@$CTRL_MGMT_IP/cinder
+    crudini --set $CINDER_CONF DEFAULT rpc_backend rabbit
+    crudini --set $CINDER_CONF DEFAULT auth_strategy keystone
+    crudini --set $CINDER_CONF DEFAULT my_ip $MGMT_IP
+    crudini --set $CINDER_CONF DEFAULT debug True
 
-    crudini --set /etc/cinder/cinder.conf oslo_messaging_rabbit rabbit_host $CTRL_MGMT_IP
-    crudini --set /etc/cinder/cinder.conf oslo_messaging_rabbit rabbit_password $RABBIT_PASS
-    crudini --set /etc/cinder/cinder.conf oslo_messaging_rabbit rabbit_userid $RABBIT_USER
-    crudini --set /etc/cinder/cinder.conf oslo_concurrency lock_path /var/lib/cinder/tmp
+    crudini --set $CINDER_CONF oslo_messaging_rabbit rabbit_host $CTRL_MGMT_IP
+    crudini --set $CINDER_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
+    crudini --set $CINDER_CONF oslo_messaging_rabbit rabbit_userid $RABBIT_USER
+    crudini --set $CINDER_CONF oslo_concurrency lock_path /var/lib/cinder/tmp
 
-    crudini --set /etc/cinder/cinder.conf keymgr encryption_auth_url http://$CTRL_MGMT_IP:5000/v3
+    crudini --set $CINDER_CONF keymgr encryption_auth_url http://$CTRL_MGMT_IP:5000/v3
 
-    crudini --del /etc/cinder/cinder.conf keystone_authtoken identity_uri
-    crudini --del /etc/cinder/cinder.conf keystone_authtoken admin_tenant_name
-    crudini --del /etc/cinder/cinder.conf keystone_authtoken admin_user
-    crudini --del /etc/cinder/cinder.conf keystone_authtoken admin_password
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken auth_plugin password
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken project_domain_id default
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken user_domain_id default
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken username $KEYSTONE_U_CINDER
-    crudini --set /etc/cinder/cinder.conf keystone_authtoken password $KEYSTONE_U_PWD_CINDER
+    crudini --del $CINDER_CONF keystone_authtoken identity_uri
+    crudini --del $CINDER_CONF keystone_authtoken admin_tenant_name
+    crudini --del $CINDER_CONF keystone_authtoken admin_user
+    crudini --del $CINDER_CONF keystone_authtoken admin_password
+    crudini --set $CINDER_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
+    crudini --set $CINDER_CONF keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
+    crudini --set $CINDER_CONF keystone_authtoken auth_plugin password
+    crudini --set $CINDER_CONF keystone_authtoken project_domain_id default
+    crudini --set $CINDER_CONF keystone_authtoken user_domain_id default
+    crudini --set $CINDER_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
+    crudini --set $CINDER_CONF keystone_authtoken username $KEYSTONE_U_CINDER
+    crudini --set $CINDER_CONF keystone_authtoken password $KEYSTONE_U_PWD_CINDER
 
     su -s /bin/sh -c "cinder-manage db sync" cinder
 
@@ -878,6 +893,13 @@ function _display() {
 }
 
 
+function log() {
+### Log the script all outputs locally
+    exec > >(sudo tee install.log)
+    exec 2>&1
+}
+
+
 function installation() {
     base
     for service in "$@"; do
@@ -894,6 +916,7 @@ function timestamp {
 
 function main {
     help $@
+    log
     _display starting
     installation $@ | timestamp
     _display completed
@@ -901,4 +924,3 @@ function main {
 
 
 main $@
-
