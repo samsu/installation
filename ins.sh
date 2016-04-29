@@ -828,7 +828,7 @@ function _repo() {
 }
 
 function _help() {
-    usage="./$(basename "$0") [-h] [-v openstack_releasename] [rolenames]
+    usage="./$(basename "$0") [-h] [-v openstack_releasename] rolenames
 
 This script help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
