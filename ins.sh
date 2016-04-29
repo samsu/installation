@@ -5,7 +5,7 @@
 # eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
 # centos use
 
-CTRL_MGMT_IP=10.160.37.56
+CTRL_MGMT_IP=
 
 INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 INTERFACE_INT=${INTERFACE_INT:-eth1}
@@ -14,6 +14,8 @@ INTERFACE_EXT=${INTERFACE_EXT:-eth2}
 VLAN_RANGES=${VLAN_RANGES:-1000:2000}
 INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
 MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
+
+CTRL_MGMT_IP=${CTRL_MGMT_IP:-$MGMT_IP}
 
 NTPSRV=${NTPSRV:-$CTRL_MGMT_IP}
 
