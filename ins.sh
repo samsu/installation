@@ -64,9 +64,11 @@ username: $KEYSTONE_U_ADMIN
 password: $KEYSTONE_U_ADMIN_PWD
 "
 
+OPENSTACK_RELEASE=(liberty mitaka)
+
 ###########################################################################
 
-function ERRTRAP() {
+function _ERRTRAP() {
     FILENAME="$PWD/$(basename "$(test -L "$0" && readlink "$0" || echo "$0")")"
     INFO="[FILE: $FILENAME, LINE: $1] Error: The following command or function exited with status $2
     $(sed -n $1p $FILENAME)
@@ -97,8 +99,8 @@ function _ntp() {
     systemctl restart ntpd.service
 }
 
-function base() {
-    trap 'ERRTRAP $LINENO $?' ERR
+function _base() {
+    trap '_ERRTRAP $LINENO $?' ERR
 
     set -o xtrace
 
@@ -812,52 +814,72 @@ function compute() {
 }
 
 
-function help() {
-    usage="./$(basename "$0") [-h] [rolenames]
+function _repo() {
+    if [ "$#" -eq 0 ]; then
+        echo "The parameter Openstack release was missed"
+        exit
+    fi
+    version=${1,,}
+    if [[ $OPENSTACK_RELEASE =~ (^|[[:space:]])"$version"($|[[:space:]]) ]]; then
+        yum install -y centos-release-openstack-$1
+    fi
+}
+
+function _help() {
+    usage="./$(basename "$0") [-h] [-v openstack_releasename] [rolenames]
 
 This script help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
 head of the script according to your setup.
 
-The rolenames could be any one or combo of the follow role set.
-a) Openstack all-in-one installation role name list:
-    allinone
+options:
+    -h  this help
+    -v  assign an openstack version to be installed,
+        the default openstack version is '${OPENSTACK_RELEASE[-1]}'
 
-b) Openstack multi-nodes installation role name list:
-    controller
-    network
-    compute
+rolenames:
+    The rolenames could be any one or combo of the follow role set.
+    a) Openstack all-in-one installation role name list:
+        allinone
 
-c) Openstack component installation role name list:
-    database
-    mq
-    dashboard
-    keystone
-    glance
-    nova_ctrl
-    nova_compute
-    neutron_ctrl
-    neutron_compute
-    neutron_network
-    cinder_ctrl
+    b) Openstack multi-nodes installation role name list:
+        controller
+        network
+        compute
 
-Examples:
-    # Install all openstack stuff(allinone role) in one machine
-    ./ins.sh allinone
+    c) Openstack component installation role name list:
+        database
+        mq
+        dashboard
+        keystone
+        glance
+        nova_ctrl
+        nova_compute
+        neutron_ctrl
+        neutron_compute
+        neutron_network
+        cinder_ctrl
 
-    # Install two roles(nova controller and neutron controller) in a machine
-    ./ins.sh nova_ctrl neutron_ctrl
+    Examples:
+        # Install all openstack stuff(allinone role) in one machine
+        ./ins.sh allinone
+
+        # Install two roles(nova controller and neutron controller) in a machine
+        ./ins.sh nova_ctrl neutron_ctrl
 "
 
     if [ "$#" -eq 0 ]; then
         echo "$usage"
         exit
     fi
-
-    while getopts ':h' option; do
+    local _OS_VERSION=${OPENSTACK_RELEASE[-1]}
+    while getopts ':hv:' option; do
       case "$option" in
         h) echo "$usage"
            exit
+           ;;
+        v) echo "adding the openstack repository $OPTARG"
+           _OS_VERSION=$OPTARG
            ;;
         :) printf "missing argument for -%s\n" "$OPTARG" >&2
            echo "$usage" >&2
@@ -869,7 +891,8 @@ Examples:
            ;;
       esac
     done
-    shift $((OPTIND - 1))
+    _repo $_OS_VERSION
+    return $((OPTIND - 1))
 }
 
 
@@ -894,15 +917,15 @@ function _display() {
 }
 
 
-function log() {
+function _log() {
 ### Log the script all outputs locally
     exec > >(sudo tee install.log)
     exec 2>&1
 }
 
 
-function installation() {
-    base
+function _installation() {
+    _base
     for service in "$@"; do
         echo "##### Installing $service ..."
         $service
@@ -910,18 +933,18 @@ function installation() {
 }
 
 
-function timestamp {
+function _timestamp {
     awk '{ print strftime("%Y-%m-%d %H:%M:%S | "), $0; fflush(); }'
 }
 
 
 function main {
-    help $@
-    log
+    _help $@
+    shift $?
+    _log
     _display starting
-    installation $@ | timestamp
+    _installation $@ | _timestamp
     _display completed
 }
-
 
 main $@
