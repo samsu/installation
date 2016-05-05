@@ -50,6 +50,7 @@ IMAGE_NAME=${IMAGE_NAME:-'cirros-0.3.4-x86_64'}
 # ml2 plugin configuration
 ML2_PLUGIN=${ML2_PLUGIN:-openvswitch}
 TYPE_DR=${TYPE_DR:-vxlan}
+SECURITY_GROUP_ENABLE=${SECURITY_GROUP_ENABLE:-False}
 
 # config file path
 KEYSTONE_CONF=${KEYSTONE_CONF:-"/etc/keystone/keystone.conf"}
@@ -66,7 +67,43 @@ username: $KEYSTONE_U_ADMIN
 password: $KEYSTONE_U_ADMIN_PWD
 "
 
-OPENSTACK_RELEASE=(liberty mitaka)
+declare -a SUPPORTED_OPENSTACK_RELEASE=(
+    liberty
+    mitaka
+)
+
+INS_OPENSTACK_RELEASE=${INS_OPENSTACK_RELEASE:-${SUPPORTED_OPENSTACK_RELEASE[-1]}}
+
+## If there is any existed local repo mirror, updated the following variables.
+REPO_MIRROR_ENABLE=${REPO_MIRROR_ENABLE:-TRUE}
+
+declare -p REPO_MIRROR_URLS > /dev/null 2>&1
+if [ $? -eq 1 ]; then
+    declare -A REPO_MIRROR_URLS=(
+        [epel]="http://10.160.37.50/epel/\$releasever/x86_64"
+        [cloud]='http://10.160.37.50/centos/\$releasever/cloud/\$basearch/openstack-${INS_OPENSTACK_RELEASE,,}/'
+    )
+fi
+
+declare -A REPO_FILES=(
+    ['epel']="/etc/yum.repos.d/epel.repo"
+    ['cloud']='/etc/yum.repos.d/CentOS-OpenStack-$INS_OPENSTACK_RELEASE.repo'
+)
+
+
+## Assign security group drivers
+SECURITY_GROUP_DRS=(
+    neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
+    neutron.agent.firewall.NoopFirewallDriver
+)
+
+if [[ ${SECURITY_GROUP_ENABLE^^} == "TRUE" ]];then
+    SECURITY_GROUP_DR=${SECURITY_GROUP_DRS[0]}
+else
+    SECURITY_GROUP_DR=${SECURITY_GROUP_DRS[1]}
+fi
+
+DEFAULT_DOMAIN_ID=''
 
 ###########################################################################
 
@@ -77,6 +114,33 @@ function _ERRTRAP() {
 
 "
     echo -e "$INFO"
+}
+
+
+function _repo() {
+    yum clean metadata
+    yum update -y
+    yum install -y epel-release
+    yum install -y centos-release-openstack-$INS_OPENSTACK_RELEASE
+    if [ $? -ne 0 ]; then
+        echo "## Fail to add Openstack repo centos-release-openstack-$INS_OPENSTACK_RELEASE"
+        exit 7
+    fi
+    if [[ ${REPO_MIRROR_ENABLE^^} == 'TRUE' ]]; then
+        for REPO_MIRROR in "${!REPO_MIRROR_URLS[@]}"; do
+            if [[ $REPO_MIRROR == 'epel' ]]; then
+                crudini --set ${REPO_FILES[$REPO_MIRROR]} epel baseurl "${REPO_MIRROR_URLS[$REPO_MIRROR]}"
+                crudini --del ${REPO_FILES[$REPO_MIRROR]} epel mirrorlist
+            elif [[ $REPO_MIRROR == 'cloud' ]]; then
+                eval _REPO_FILE="${REPO_FILES[$REPO_MIRROR]}"
+                eval _REPO_URL="${REPO_MIRROR_URLS[$REPO_MIRROR]}"
+                crudini --set $_REPO_FILE centos-openstack-$INS_OPENSTACK_RELEASE baseurl $_REPO_URL
+            fi
+        done
+    fi
+    yum clean metadata
+    yum update -y
+    yum upgrade -y
 }
 
 
@@ -106,8 +170,7 @@ function _base() {
 
     set -o xtrace
 
-    yum update -y
-    yum upgrade -y
+    _repo
 
     # set installed Kernel limits(INS_KERNELS, default 2) and clean up old Kernels
     crudini --set /etc/yum.conf main installonly_limit $INS_KERNELS
@@ -118,7 +181,6 @@ function _base() {
     fi
 
     yum autoremove -y firewalld
-    yum install -y crudini
     yum install -y openstack-selinux python-pip python-openstackclient
     pip install --upgrade pip
 
@@ -130,11 +192,12 @@ function _base() {
         eval KEYSTONE_U_${service^^}=$service
         eval KEYSTONE_U_PWD_${service^^}=$service
     done
-        cat > ~/openrc << EOF
+
+    cat > ~/openrc << EOF
 export OS_TENANT_NAME=$KEYSTONE_T_NAME_ADMIN
 export OS_USERNAME=$KEYSTONE_U_ADMIN
 export OS_PASSWORD=$KEYSTONE_U_ADMIN_PWD
-export OS_AUTH_URL=http://$CTRL_MGMT_IP:35357/v2.0
+export OS_AUTH_URL=http://$CTRL_MGMT_IP:35357/v3
 EOF
     source ~/openrc
 }
@@ -282,7 +345,7 @@ function keystone() {
     export OS_URL=http://$CTRL_MGMT_IP:35357/v3
     export OS_IDENTITY_API_VERSION=3
 
-
+    openstack domain show default || openstack domain create --description "Default Domain" default
     openstack project show $KEYSTONE_T_NAME_ADMIN || openstack project create --domain default --description "Admin Project" $KEYSTONE_T_NAME_ADMIN
     openstack user show $KEYSTONE_U_ADMIN || openstack user create --domain default --password $KEYSTONE_U_ADMIN_PWD $KEYSTONE_U_ADMIN
     openstack role show $KEYSTONE_R_NAME_ADMIN || openstack role create $KEYSTONE_R_NAME_ADMIN
@@ -296,20 +359,14 @@ function keystone() {
     # sed -i 's/sizelimit url_normalize request_id build_auth_context token_auth admin_token_auth json_body ec2_extension s3_extension crud_extension admin_service/sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension s3_extension crud_extension admin_service/g' /etc/keystone/keystone-paste.ini
     # sed -i 's/sizelimit url_normalize request_id build_auth_context token_auth admin_token_auth json_body ec2_extension_v3 s3_extension simple_cert_extension revoke_extension federation_extension oauth1_extension endpoint_filter_extension service_v3/sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension_v3 s3_extension simple_cert_extension revoke_extension federation_extension oauth1_extension endpoint_filter_extension service_v3/g' /etc/keystone/keystone-paste.ini
 
-
     for service in $SERVICES; do
         openstack endpoint list --service $service 2>/dev/null
         if [ $? -ne 0 ]; then
             if [ $service == 'keystone' ] ; then
-                openstack service create --name keystone --description "OpenStack Identity" identity
-                openstack endpoint create --region $REGION identity public http://$CTRL_MGMT_IP:5000/v2.0
-                openstack endpoint create --region $REGION identity internal http://$CTRL_MGMT_IP:5000/v2.0
-                openstack endpoint create --region $REGION identity admin http://$CTRL_MGMT_IP:35357/v2.0
-
-                openstack service create --name keystonev3 --description "OpenStack Identity v3" identityv3
-                openstack endpoint create --region $REGION identityv3 public http://$CTRL_MGMT_IP:5000/v3.0
-                openstack endpoint create --region $REGION identityv3 internal http://$CTRL_MGMT_IP:5000/v3.0
-                openstack endpoint create --region $REGION identityv3 admin http://$CTRL_MGMT_IP:35357/v3.0
+                openstack service create --name keystone --description "OpenStack Identity v3" identity
+                openstack endpoint create --region $REGION identity public http://$CTRL_MGMT_IP:5000/v3
+                openstack endpoint create --region $REGION identity internal http://$CTRL_MGMT_IP:5000/v3
+                openstack endpoint create --region $REGION identity admin http://$CTRL_MGMT_IP:35357/v3
 
             elif [ $service == 'glance' ] ; then
                 openstack service create --name glance --description "OpenStack Image service" image
@@ -374,8 +431,11 @@ function glance() {
     fi
 
     crudini --set /etc/glance/glance-api.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
-    crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
-    crudini --set /etc/glance/glance-api.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
+    crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
+    crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
+    crudini --set /etc/glance/glance-api.conf keystone_authtoken project_domain_name default
+    crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_type password
+    crudini --set /etc/glance/glance-api.conf keystone_authtoken user_domain_name default
     crudini --set /etc/glance/glance-api.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
     crudini --set /etc/glance/glance-api.conf keystone_authtoken admin_user $KEYSTONE_U_GLANCE
     crudini --set /etc/glance/glance-api.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_GLANCE
@@ -383,8 +443,11 @@ function glance() {
     crudini --set /etc/glance/glance-api.conf DEFAULT notification_driver noop
 
     crudini --set /etc/glance/glance-registry.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
-    crudini --set /etc/glance/glance-registry.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
-    crudini --set /etc/glance/glance-registry.conf keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken project_domain_name default
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken user_domain_name default
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken auth_type password
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken admin_user $KEYSTONE_U_GLANCE
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken admin_password $KEYSTONE_U_PWD_GLANCE
@@ -421,7 +484,8 @@ function _nova_configure() {
         crudini --set $NOVA_CONF DEFAULT auth_strategy keystone
         crudini --set $NOVA_CONF DEFAULT network_api_class nova.network.neutronv2.api.API
         crudini --set $NOVA_CONF DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
-        crudini --set $NOVA_CONF DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+        #crudini --set $NOVA_CONF DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+        crudini --set $NOVA_CONF DEFAULT security_group_api neutron
         crudini --set $NOVA_CONF DEFAULT my_ip $MGMT_IP
         crudini --set $NOVA_CONF DEFAULT vnc_enabled True
         crudini --set $NOVA_CONF DEFAULT vncserver_listen 0.0.0.0
@@ -434,7 +498,7 @@ function _nova_configure() {
         fi
         crudini --set $NOVA_CONF DEFAULT debug True
 
-        crudini --set $NOVA_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v2.0
+        crudini --set $NOVA_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v3
         crudini --set $NOVA_CONF keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
         crudini --set $NOVA_CONF keystone_authtoken admin_tenant_name $KEYSTONE_T_NAME_SERVICE
         crudini --set $NOVA_CONF keystone_authtoken admin_user $KEYSTONE_U_NOVA
@@ -548,7 +612,7 @@ function _neutron_configure() {
         crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_status_changes True
         crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_data_changes True
         crudini --set $NEUTRON_CONF DEFAULT nova_url http://$CTRL_MGMT_IP:8774/v2
-        crudini --set $NEUTRON_CONF DEFAULT nova_admin_auth_url http://$CTRL_MGMT_IP:35357/v2.0/
+        crudini --set $NEUTRON_CONF DEFAULT nova_admin_auth_url http://$CTRL_MGMT_IP:35357/v3/
         crudini --set $NEUTRON_CONF DEFAULT nova_region_name regionOne
         crudini --set $NEUTRON_CONF DEFAULT nova_admin_username $KEYSTONE_U_NOVA
         crudini --set $NEUTRON_CONF DEFAULT nova_admin_tenant_id $KEYSTONE_T_ID_SERVICE
@@ -579,8 +643,8 @@ function _neutron_configure() {
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2_type_vxlan vni_ranges 1:1000
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_security_group True
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_ipset True
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver neutron.agent.linux.iptables_firewall.OVSHybridIptablesFirewallDriver
 
+        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver $SECURITY_GROUP_DR
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini agent root_helper 'sudo neutron-rootwrap /etc/neutron/rootwrap.conf'
         crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini agent root_helper_daemon 'sudo /usr/bin/neutron-rootwrap-daemon /etc/neutron/rootwrap.conf'
 
@@ -656,7 +720,7 @@ function _neutron_configure() {
 
     ## config metadata agent /etc/neutron/metadata_agent.ini
     if [ -e "/etc/neutron/metadata_agent.ini" ]; then
-        crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_url http://$CTRL_MGMT_IP:5000/v2.0
+        crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_url http://$CTRL_MGMT_IP:5000/v3
         crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_region $REGION
         crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_tenant_name $KEYSTONE_T_NAME_SERVICE
         crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_user $KEYSTONE_U_NEUTRON
@@ -769,7 +833,7 @@ function dashboard() {
     sed -i "s#ALLOWED_HOSTS = \['horizon.example.com', 'localhost'\]#ALLOWED_HOSTS = \['*', \]#g" /etc/openstack-dashboard/local_settings
     sed -i "s#'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',#'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',\n\t'LOCATION': '127.0.0.1:11211',#g" /etc/openstack-dashboard/local_settings
     sed -i "s/^#OPENSTACK_API_VERSIONS = {/OPENSTACK_API_VERSIONS = {/g" /etc/openstack-dashboard/local_settings
-    ## sed -i 's/^#    "identity": 3,/     "identity": 3,/g' /etc/openstack-dashboard/local_settings
+    sed -i 's/^#    "identity": 3,/     "identity": 3,/g' /etc/openstack-dashboard/local_settings
     sed -i "s/^#    \"volume\": 2,/     \"volume\": 2,\n}/g" /etc/openstack-dashboard/local_settings
 
     systemctl enable httpd.service memcached.service
@@ -816,19 +880,9 @@ function compute() {
 }
 
 
-function _repo() {
-    if [ "$#" -eq 0 ]; then
-        echo "The parameter Openstack release was missed"
-        exit
-    fi
-    version=${1,,}
-    if [[ $OPENSTACK_RELEASE =~ (^|[[:space:]])"$version"($|[[:space:]]) ]]; then
-        yum install -y centos-release-openstack-$1
-    fi
-}
-
 function _help() {
-    usage="./$(basename "$0") [-h] [-v openstack_releasename] rolenames
+    usage="
+./$(basename "$0") [-h] [-v openstack_releasename] rolenames
 
 This script help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
@@ -836,8 +890,9 @@ head of the script according to your setup.
 
 options:
     -h  this help
-    -v  assign an openstack version to be installed,
-        the default openstack version is '${OPENSTACK_RELEASE[-1]}'
+    -v  assign an openstack version to be installed, currently supported
+        Openstack version are: ${SUPPORTED_OPENSTACK_RELEASE[@]}
+        the default openstack version is '${SUPPORTED_OPENSTACK_RELEASE[-1]}'
 
 rolenames:
     The rolenames could be any one or combo of the follow role set.
@@ -872,38 +927,53 @@ rolenames:
 
     if [ "$#" -eq 0 ]; then
         echo "$usage"
-        exit
+        exit 6
     fi
-    local _OS_VERSION=${OPENSTACK_RELEASE[-1]}
     while getopts ':hv:' option; do
-      case "$option" in
-        h) echo "$usage"
-           exit
-           ;;
-        v) echo "adding the openstack repository $OPTARG"
-           _OS_VERSION=$OPTARG
-           ;;
-        :) printf "missing argument for -%s\n" "$OPTARG" >&2
-           echo "$usage" >&2
-           exit 1
-           ;;
-       \?) printf "illegal option: -%s\n" "$OPTARG" >&2
-           echo "$usage" >&2
-           exit 1
-           ;;
-      esac
+        case "$option" in
+        h)  echo "$usage"
+            exit
+            ;;
+        v)  local version=${OPTARG,,}
+            local _SUPPORTED=FALSE
+            for VER in ${SUPPORTED_OPENSTACK_RELEASE[@]}; do
+                if [[ $VER == "$version" ]]; then
+                    _SUPPORTED=TRUE
+                    INS_OPENSTACK_RELEASE=$VER
+                    break
+                fi
+            done
+            if [[ $_SUPPORTED != "TRUE" ]]; then
+                echo -e "
+Error: The assigned Openstack version is not supported so far,
+the supported openstack version were listed as below:
+${SUPPORTED_OPENSTACK_RELEASE[@]}
+"
+                exit 3
+            fi
+            ;;
+        :)  printf "missing argument for -%s\n" "$OPTARG" >&2
+            echo "$usage" >&2
+            exit 2
+            ;;
+        \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+            echo "$usage" >&2
+            exit 1
+            ;;
+        esac
     done
-    _repo $_OS_VERSION
     return $((OPTIND - 1))
 }
 
 
 function _display() {
-    sudo yum -y install figlet >& /dev/null
+    yum install -y epel-release > /dev/null 2>&1
+    sudo yum -y install figlet crudini >& /dev/null
+    yum autoremove -y epel-release > /dev/null 2>&1
 
     if [[ "$?" != "0" ]]; then
         echo "Failed to install the package figlet"
-        exit 1
+        exit 4
     fi
 
     if [[ "$*" == "starting" ]]; then
@@ -920,7 +990,7 @@ function _display() {
 
 
 function _log() {
-### Log the script all outputs locally
+    ## Log the script all outputs locally
     exec > >(sudo tee install.log)
     exec 2>&1
 }
@@ -946,7 +1016,9 @@ function main {
     _log
     _display starting
     _installation $@ | _timestamp
-    _display completed
+    if [[ $? -eq 0 ]]; then
+        _display completed
+    fi
 }
 
 main $@
