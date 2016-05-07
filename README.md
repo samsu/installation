@@ -4,10 +4,11 @@ This script will help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
 head of the script according to your setup.
 
+
 Prerequisites:
+
     1. host os support: Centos 7 and up minimal installation.
        e.g. CentOS-7-x86_64-Minimal-1511.iso
-
 
     2. Three ethernet interfaces are required, these interfaces will by used
        as below:
@@ -37,17 +38,23 @@ Prerequisites:
 
     5. Internet connection is required
 
+
 Usage:
+
     ./ins.sh [-h] [-v openstack_releasename] rolenames
 
+
 Options:
+
     -h  this help
     -v  assign an openstack version to be installed, currently supported
         Openstack version are: liberty, mitaka
         the default openstack version is 'mitaka'
 
+
 Rolenames:
     The rolenames could be any one or combo of the follow role set.
+
     a) Openstack all-in-one installation role name list:
         allinone
 
@@ -69,7 +76,9 @@ Rolenames:
         neutron_network
         cinder_ctrl
 
+
 Examples:
+
     # Install all openstack stuff(allinone role) in one machine
     ./ins.sh allinone
 
