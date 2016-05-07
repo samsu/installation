@@ -1,0 +1,10 @@
+<network>
+  <name>fgt-mgmt</name>
+  <bridge name="fgt-br"/>
+  <forward mode="nat"/>
+  <ip address="169.254.254.1" netmask="255.255.255.0">
+    <dhcp>
+      <range start="169.254.254.100" end="169.254.254.254"/>
+    </dhcp>
+  </ip>
+</network>
