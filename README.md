@@ -40,7 +40,9 @@ Prerequisites:
 
 
 Usage:
-
+   
+    git clone https://github.com/samsu/installation
+    cd installation
     ./ins.sh [-h] [-v openstack_releasename] rolenames
 
 
