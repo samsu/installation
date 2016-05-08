@@ -625,6 +625,7 @@ function _display() {
 
     elif [[ "$*" == "completed" ]]; then
         figlet -tf slant Openstack installation $1
+        echo -e "It takes\x1b[32m $SECONDS \x1b[0mseconds during the installation."
         echo "$LOGIN_INFO"
 
     else
@@ -645,6 +646,7 @@ function _installation() {
     for service in "$@"; do
         echo "##### Installing $service ..."
         $service
+        ###|| exit $?
     done
 }
 
@@ -660,9 +662,8 @@ function main {
     _log
     _display starting
     _installation $@ | _timestamp
-    if [[ $? -eq 0 ]]; then
-        _display completed
-    fi
+    _display completed
 }
 
 main $@
+

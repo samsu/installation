@@ -4,10 +4,14 @@ This script will help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
 head of the script according to your setup.
 
+Network layout:
+
+![alt text](./docs/images/network_layout.png "Reference Network Layout")
+    
 
 Prerequisites:
 
-    1. host os support: Centos 7 and up minimal installation.
+    1. Supported host os: Centos 7 and up minimal installation.
        e.g. CentOS-7-x86_64-Minimal-1511.iso
 
     2. Three ethernet interfaces are required, these interfaces will by used
