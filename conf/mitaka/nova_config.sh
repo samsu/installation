@@ -1,5 +1,6 @@
 function _nova_configure() {
     if [ -e "$NOVA_CONF" ]; then
+        crudini --set $NOVA_CONF api_database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova_api
         crudini --set $NOVA_CONF database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
         crudini --set $NOVA_CONF DEFAULT rpc_backend rabbit
         crudini --set $NOVA_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
@@ -61,5 +62,8 @@ function _nova_configure() {
         crudini --set $NOVA_CONF neutron metadata_proxy_shared_secret $METADATA_SECRET
 
         crudini --set $NOVA_CONF cinder os_region_name $REGION
+
+        su -s /bin/sh -c "nova-manage api_db sync" nova
+        su -s /bin/sh -c "nova-manage db sync" nova
     fi
 }

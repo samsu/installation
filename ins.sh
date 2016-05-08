@@ -76,6 +76,7 @@ export SUPPORTED_OPENSTACK_RELEASE
 export INS_OPENSTACK_RELEASE=${INS_OPENSTACK_RELEASE:-${SUPPORTED_OPENSTACK_RELEASE[-1]}}
 
 ## If there is any existed local repo mirror, updated the following variables.
+REPO_MIRROR_ENABLE=FALSE
 export REPO_MIRROR_ENABLE=${REPO_MIRROR_ENABLE:-TRUE}
 
 declare -p REPO_MIRROR_URLS > /dev/null 2>&1
@@ -128,7 +129,10 @@ function _import_config() {
     ##   ${KEYS[$INS_OPENSTACK_RELEASE,KEYSTONE_U_PWD_GLANCE]:-admin_password}
     TOP_DIR=$(cd $(dirname "$0") && pwd)
     _CONF_PATH="$TOP_DIR/conf/${INS_OPENSTACK_RELEASE,,}"
+    _DB_CREATION="$_CONF_PATH/db_creation.sh"
 
+    source $_DB_CREATION
+ 
     for service in $SERVICES horizon; do
         CONF="$_CONF_PATH/${service}_config.sh"
         if [ -e $CONF ]; then
@@ -160,10 +164,9 @@ function _repo() {
                 crudini --set $_REPO_FILE centos-openstack-$INS_OPENSTACK_RELEASE baseurl $_REPO_URL
             fi
         done
+        yum clean metadata
+        yum update -y
     fi
-    yum clean metadata
-    yum update -y
-    yum upgrade -y
 }
 
 
@@ -311,19 +314,8 @@ expect eof
     # Enable root remote access MySQL
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
-
-    for service in $SERVICES; do
-        mysqlshow -uroot -p$MYSQL_ROOT_PASSWORD $service 2>&1| grep -o "Database: $service" > /dev/nul
-        if [ $? -ne 0 ]; then
-            eval SERVICE_DB_USER=\$$(echo DB_USER_${service^^})
-            eval SERVICE_DB_PWD=\$$(echo DB_PWD_${service^^})
-            echo "Creating database $service,  db user: '$SERVICE_DB_USER', db password: '$SERVICE_DB_PWD...'"
-            mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE $service;"
-            mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON $service.* TO '$(echo $SERVICE_DB_USER)'@'%' IDENTIFIED BY '$(echo $SERVICE_DB_PWD)';"
-            mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON $service.* TO '$(echo $SERVICE_DB_USER)'@'localhost' IDENTIFIED BY '$(echo $SERVICE_DB_PWD)';"
-        fi
-    done
-
+    
+    _services_db_creation
 }
 
 
@@ -393,7 +385,6 @@ function nova_ctrl() {
 
     _nova_configure
 
-    su -s /bin/sh -c "nova-manage db sync" nova
 
     systemctl enable openstack-nova-api.service openstack-nova-cert.service \
       openstack-nova-consoleauth.service openstack-nova-scheduler.service \
