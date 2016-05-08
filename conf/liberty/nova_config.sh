@@ -43,5 +43,6 @@ function _nova_configure() {
         crudini --set $NOVA_CONF neutron metadata_proxy_shared_secret $METADATA_SECRET
 
         crudini --set $NOVA_CONF cinder os_region_name $REGION
+        su -s /bin/sh -c "nova-manage db sync" nova 
     fi
 }
