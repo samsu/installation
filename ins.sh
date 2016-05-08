@@ -362,6 +362,7 @@ function glance() {
 
     systemctl enable openstack-glance-api.service openstack-glance-registry.service
     systemctl restart openstack-glance-api.service openstack-glance-registry.service
+    sleep 5s
 
     openstack image show $IMAGE_NAME >/dev/null 2>&1
     if [ $? -ne 0 ]; then
