@@ -38,9 +38,30 @@ export KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 export REGION=${REGION:-RegionOne}
 
 # Enable Distributed Virtual Routers(True or False)
-export DVR=${DVR:-True}
+export DVR=${DVR:-False}
 
 export CONFIG_DRIVE=${CONFIG_DRIVE:-True}
+
+# Need to update the params with name *FORTINET* to enable fortinet plugin on
+# neutron server in addition to manually boot up your own fortigate.
+export ENABLE_FORTINET_PLUGIN=${ENABLE_FORTINET_PLUGIN:-True}
+# the fortigate management interface ip address
+export FORTINET_ADDRESS=
+# The port in the fortigate to provide Openstack external network.
+export FORTINET_EXT_INTERFACE=
+# The port in the fortigate to provide Openstack internal network(tenant network).
+export FORTINET_INT_INTERFACE=
+
+export FORTINET_NPU_AVAILABLE=${FORTINET_NPU_AVAILABLE:-False}
+# username to access fortigate api (default None)
+export FORTINET_PASSWORD=${FORTINET_PASSWORD:-''}
+# username to access fortigate api (default admin)
+export FORTINET_USERNAME=${FORTINET_USERNAME:-admin}
+# use which protocol to access fortigate api (http or https, default https)
+export FORTINET_PROTOCOL=${FORTINET_PROTOCOL:-https}
+# use which protocol port to access fortigate api (default 443)
+export FORTINET_PORT=${FORTINET_PORT:-443}
+export FORTINET_ENABLE_DEFAULT_FWRULE=${FORTINET_ENABLE_DEFAULT_FWRULE:-False}
 
 # cirros image
 export IMAGE_FILE=${IMAGE_FILE:-"cirros-0.3.4-x86_64-disk.img"}
@@ -49,7 +70,7 @@ export IMAGE_NAME=${IMAGE_NAME:-'cirros-0.3.4-x86_64'}
 
 # ml2 plugin configuration
 export ML2_PLUGIN=${ML2_PLUGIN:-openvswitch}
-export TYPE_DR=${TYPE_DR:-vxlan}
+export TYPE_DR=${TYPE_DR:-vlan}
 export SECURITY_GROUP_ENABLE=${SECURITY_GROUP_ENABLE:-False}
 
 # config file path

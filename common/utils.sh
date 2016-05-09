@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function loadvars() {
     varname=${1,,}
     eval var=\$$(echo $1)
@@ -18,4 +20,3 @@ function loadvars() {
         done
     fi
 }
-

@@ -1,7 +1,7 @@
 function _neutron_dvr_configure() {
-    echo "starting _neutron_dvr_configure ..."
-
     if [[ "${DVR^^}" == 'TRUE' ]]; then
+        echo -e "\n#### Starting _neutron_dvr_configure ..."
+
         if [[ 'neutron_ctrl' =~ "$1" ]]; then
             # enable dvr
             crudini --set $NEUTRON_CONF DEFAULT router_distributed True
@@ -40,6 +40,60 @@ function _neutron_dvr_configure() {
     fi
 }
 
+
+function _neutron_fortinet_configure() {
+    if [[ "${ENABLE_FORTINET_PLUGIN^^}" == 'TRUE' ]]; then
+        if [[ -z $FORTINET_ADDRESS ]] || [[ -z $FORTINET_EXT_INTERFACE ]] || [[ -z $FORTINET_INT_INTERFACE ]]; then
+            echo -e "\nThe following variables all need to be set according to
+your environment:
+FORTINET_ADDRESS=$FORTINET_ADDRESS
+FORTINET_EXT_INTERFACE=$FORTINET_EXT_INTERFACE
+FORTINET_INT_INTERFACE=$FORTINET_INT_INTERFACE
+please set them and run again.
+"
+        exit 30
+        fi
+
+        echo -e "\n#### Starting _neutron_fortinet_configure ..."
+
+        if [[ 'neutron_ctrl' =~ "$1" ]]; then
+            _ML2_CONF="/etc/neutron/plugins/ml2/ml2_conf.ini"
+            if [ -e  ]; then
+                if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                    # Not supported yet, pass
+                    echo "Enabled the fortinet driver ENABLE_FORTINET_PLUGIN but assigned not supported TYPE_DRIVER $TYPE_DR"
+                    exit 20
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                    # Not supported yet, pass
+                    echo "Enabled the fortinet driver ENABLE_FORTINET_PLUGIN but assigned not supported TYPE_DRIVER $TYPE_DR"
+                    exit 20
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                    crudini --set $_ML2_CONF ml2_fortinet npu_available ${FORTINET_NPU_AVAILABLE}
+                    crudini --set $_ML2_CONF ml2_fortinet tenant_network_type $TYPE_DR
+                    crudini --set $_ML2_CONF ml2_fortinet ext_interface ${FORTINET_EXT_INTERFACE}
+                    crudini --set $_ML2_CONF ml2_fortinet int_interface ${FORTINET_INT_INTERFACE}
+                    crudini --set $_ML2_CONF ml2_fortinet password ${FORTINET_PASSWORD}
+                    crudini --set $_ML2_CONF ml2_fortinet username ${FORTINET_USERNAME}
+                    crudini --set $_ML2_CONF ml2_fortinet protocol ${FORTINET_PROTOCOL}
+                    crudini --set $_ML2_CONF ml2_fortinet port ${FORTINET_PORT}
+                    crudini --set $_ML2_CONF ml2_fortinet address ${FORTINET_ADDRESS}
+                    crudini --set $_ML2_CONF ml2_fortinet enable_default_fwrule ${FORTINET_ENABLE_DEFAULT_FWRULE}
+                fi
+            fi
+
+            pip install --upgrade networking-fortinet
+
+            if [ -e "$NEUTRON_CONF" ]; then
+                crudini --set $NEUTRON_CONF DEFAULT service_plugins router_fortinet,fwaas_fortinet
+            fi
+        fi
+
+    fi
+}
 
 function _neutron_configure() {
     ## config neutron.conf
@@ -185,4 +239,5 @@ function _neutron_configure() {
     fi
 
     _neutron_dvr_configure $1
+    _neutron_fortinet_configure $1
 }
