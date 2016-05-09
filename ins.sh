@@ -5,7 +5,7 @@
 # eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
 # centos use
 
-CTRL_MGMT_IP=
+CTRL_MGMT_IP=10.160.37.60
 
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
@@ -76,7 +76,7 @@ export SUPPORTED_OPENSTACK_RELEASE
 export INS_OPENSTACK_RELEASE=${INS_OPENSTACK_RELEASE:-${SUPPORTED_OPENSTACK_RELEASE[-1]}}
 
 ## If there is any existed local repo mirror, updated the following variables.
-REPO_MIRROR_ENABLE=FALSE
+#REPO_MIRROR_ENABLE=FALSE
 export REPO_MIRROR_ENABLE=${REPO_MIRROR_ENABLE:-TRUE}
 
 declare -p REPO_MIRROR_URLS > /dev/null 2>&1
@@ -362,19 +362,31 @@ function glance() {
 
     systemctl enable openstack-glance-api.service openstack-glance-registry.service
     systemctl restart openstack-glance-api.service openstack-glance-registry.service
-    sleep 5s
 
     openstack image show $IMAGE_NAME >/dev/null 2>&1
     if [ $? -ne 0 ]; then
         mkdir -p /tmp/images
         wget -P /tmp/images $IMAGE_URL
 
+        local _COUNT=0
+        while true; do
+            sleep 2s
+            netstat -anp|grep 9292
+            if [ $? -eq 0 ]; then
+                break
+            fi
+            if [ ${_COUNT} -gt 10 ]; then
+                echo "glance service cannot work properly."
+                exit 10
+            fi
+            $((_COUNT++))
+        done
+
         openstack image create --file /tmp/images/$IMAGE_FILE \
           --disk-format qcow2 --container-format bare --public $IMAGE_NAME
-
         openstack image list
 
-        yes | rm -rf /tmp/images
+        rm -rf /tmp/images
     fi
 }
 
@@ -645,8 +657,7 @@ function _installation() {
     _base
     for service in "$@"; do
         echo "##### Installing $service ..."
-        $service
-        ###|| exit $?
+        $service || exit $?
     done
 }
 
