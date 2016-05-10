@@ -169,30 +169,30 @@ function _neutron_configure() {
         if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
             crudini --set $ML2_CONF ml2_type_vxlan vni_ranges 1:1000
 
-            crudini --set $OVS_CONF ovs local_ip $INTERFACE_INT_IP
-            crudini --set $OVS_CONF ovs tunnel_bridge br-tun
+            crudini --set $ML2_CONF ovs local_ip $INTERFACE_INT_IP
+            crudini --set $ML2_CONF ovs tunnel_bridge br-tun
             TUNNEL_TYPES=vxlan
-            crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
+            crudini --set $ML2_CONF agent tunnel_types $TUNNEL_TYPES
         fi
 
         if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
-            crudini --set $OVS_CONF ml2_type_gre tunnel_id_ranges 1:1000
+            crudini --set $ML2_CONF ml2_type_gre tunnel_id_ranges 1:1000
 
-            crudini --set $OVS_CONF ovs local_ip $INTERFACE_INT_IP
-            crudini --set $OVS_CONF ovs tunnel_bridge br-tun
+            crudini --set $ML2_CONF ovs local_ip $INTERFACE_INT_IP
+            crudini --set $ML2_CONF ovs tunnel_bridge br-tun
             if [[ -z $TUNNEL_TYPES ]]; then
                 TUNNEL_TYPES="gre"
              else
                 TUNNEL_TYPES="$TUNNEL_TYPES,gre"
              fi
-             crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
+             crudini --set $ML2_CONF agent tunnel_types $TUNNEL_TYPES
         fi
 
         if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
-            crudini --set $OVS_CONF ml2_type_vlan network_vlan_ranges $VLAN_RANGES
+            crudini --set $ML2_CONF ml2_type_vlan network_vlan_ranges $VLAN_RANGES
 
-            crudini --set $OVS_CONF ovs network_vlan_ranges $VLAN_RANGES
-            crudini --set $OVS_CONF ovs bridge_mappings physnet1:br-vlan
+            crudini --set $ML2_CONF ovs network_vlan_ranges $VLAN_RANGES
+            crudini --set $ML2_CONF ovs bridge_mappings physnet1:br-vlan
 
         fi
 
