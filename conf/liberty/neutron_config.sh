@@ -29,7 +29,7 @@ function _neutron_dvr_configure() {
         fi
 
         if [[ "$ML2_PLUGIN" == 'openvswitch' ]]; then
-            for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+            for file in "$ML2_CONF" "$OVS_CONF" ; do
                 if [ -e $file ]; then
                     crudini --set $file ovs tunnel_bridge br-tun
                     crudini --set $file agent enable_distributed_routing True
@@ -41,11 +41,136 @@ function _neutron_dvr_configure() {
 }
 
 
+function _neutron_fortinet_configure() {
+    if [[ "${ENABLE_FORTINET_PLUGIN^^}" == 'TRUE' ]]; then
+        if [[ -z $FORTINET_ADDRESS ]] || [[ -z $FORTINET_EXT_INTERFACE ]] || [[ -z $FORTINET_INT_INTERFACE ]]; then
+            echo -e "\nThe following variables all need to be set according to
+your environment:
+FORTINET_ADDRESS=$FORTINET_ADDRESS
+FORTINET_EXT_INTERFACE=$FORTINET_EXT_INTERFACE
+FORTINET_INT_INTERFACE=$FORTINET_INT_INTERFACE
+please set them and run again.
+"
+        exit 30
+        fi
+
+        echo -e "\n#### Starting _neutron_fortinet_configure ..."
+
+        if [[ 'neutron_ctrl' =~ "$1" ]]; then
+            if [ -e $ML2_CONF ]; then
+                if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                    # Not supported yet, pass
+                    echo "Enabled the fortinet driver ENABLE_FORTINET_PLUGIN but assigned not supported TYPE_DRIVER $TYPE_DR"
+                    exit 20
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                    # Not supported yet, pass
+                    echo "Enabled the fortinet driver ENABLE_FORTINET_PLUGIN but assigned not supported TYPE_DRIVER $TYPE_DR"
+                    exit 20
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                    crudini --set $ML2_CONF ml2_fortinet npu_available ${FORTINET_NPU_AVAILABLE}
+                    crudini --set $ML2_CONF ml2_fortinet tenant_network_type $TYPE_DR
+                    crudini --set $ML2_CONF ml2_fortinet ext_interface ${FORTINET_EXT_INTERFACE}
+                    crudini --set $ML2_CONF ml2_fortinet int_interface ${FORTINET_INT_INTERFACE}
+                    crudini --set $ML2_CONF ml2_fortinet password ${FORTINET_PASSWORD}
+                    crudini --set $ML2_CONF ml2_fortinet username ${FORTINET_USERNAME}
+                    crudini --set $ML2_CONF ml2_fortinet protocol ${FORTINET_PROTOCOL}
+                    crudini --set $ML2_CONF ml2_fortinet port ${FORTINET_PORT}
+                    crudini --set $ML2_CONF ml2_fortinet address ${FORTINET_ADDRESS}
+                    crudini --set $ML2_CONF ml2_fortinet enable_default_fwrule ${FORTINET_ENABLE_DEFAULT_FWRULE}
+
+                    crudini --set $ML2_CONF ml2 mechanism_drivers fortinet,$ML2_PLUGIN
+                fi
+            fi
+
+            if [[ $SERVICE_PLUGINS =~(^|[,])'fwaas_fortinet'($|[,]) ]]; then
+                yum install -y openstack-neutron-fwaas
+            fi
+
+            pip install --upgrade networking-fortinet
+
+            if [ -e $NEUTRON_CONF ]; then
+                crudini --set $NEUTRON_CONF DEFAULT service_plugins $SERVICE_PLUGINS
+            fi
+        fi
+
+    fi
+}
+
+
 function _neutron_configure() {
     ## config neutron.conf
     if [ -z "$KEYSTONE_T_ID_SERVICE" ]; then
         export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
     fi
+
+    case "$1" in
+        'neutron_ctrl' )
+            _neutron_dvr_configure $1
+            _neutron_fortinet_configure $1
+            ;;
+
+        'neutron_compute' )
+            _neutron_dvr_configure $1
+
+            if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
+                if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-vlan
+                    ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
+                fi
+            fi
+            ;;
+
+        'neutron_network' )
+            _neutron_dvr_configure $1
+
+            if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
+                if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-vlan
+                    ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
+                fi
+
+                for file in $ML2_CONF /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+                    if [ -e $file ]; then
+                        crudini --set $file ovs bridge_mappings external:br-ex
+                    fi
+                done
+                ovs-vsctl --may-exist add-br br-ex
+                ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
+            fi
+            ;;
+
+        * ) echo "The inputed params $1 is invaild."
+            exit 12
+            ;;
+    esac
+
+
+    # $NEUTRON_CONF configuration
+    if [ ! -z $_NEUTRON_CONFIGED ]; then
+        return
+    fi
+
+
     # $NEUTRON_CONF configuration
     if [ -e "$NEUTRON_CONF" ]; then
         crudini --set $NEUTRON_CONF DEFAULT debug True
@@ -82,21 +207,48 @@ function _neutron_configure() {
     fi
 
     ## /etc/neutron/plugins/ml2/ml2_conf.ini
-    if [ -e "/etc/neutron/plugins/ml2/ml2_conf.ini" ]; then
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 type_drivers flat,$TYPE_DR
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 tenant_network_types $TYPE_DR
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 mechanism_drivers $ML2_PLUGIN,l2population
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2 external_network_type flat
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini ml2_type_vxlan vni_ranges 1:1000
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_security_group True
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup enable_ipset True
+    if [ -e "$ML2_CONF" ]; then
+        crudini --set $ML2_CONF ml2 type_drivers flat,$TYPE_DR
+        crudini --set $ML2_CONF ml2 tenant_network_types $TYPE_DR
+        crudini --set $ML2_CONF ml2 mechanism_drivers $ML2_PLUGIN
+        crudini --set $ML2_CONF ml2 external_network_type flat
 
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini securitygroup firewall_driver $SECURITY_GROUP_DR
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini agent root_helper 'sudo neutron-rootwrap /etc/neutron/rootwrap.conf'
-        crudini --set /etc/neutron/plugins/ml2/ml2_conf.ini agent root_helper_daemon 'sudo /usr/bin/neutron-rootwrap-daemon /etc/neutron/rootwrap.conf'
+        crudini --set $ML2_CONF securitygroup enable_security_group True
+        crudini --set $ML2_CONF securitygroup enable_ipset True
+
+        crudini --set $ML2_CONF securitygroup firewall_driver $SECURITY_GROUP_DR
+        crudini --set $ML2_CONF agent root_helper 'sudo neutron-rootwrap /etc/neutron/rootwrap.conf'
+        crudini --set $ML2_CONF agent root_helper_daemon 'sudo /usr/bin/neutron-rootwrap-daemon /etc/neutron/rootwrap.conf'
+
+        if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+            crudini --set $ML2_CONF ml2_type_vxlan vni_ranges 1:1000
+            crudini --set $ML2_CONF ovs local_ip $INTERFACE_INT_IP
+            crudini --set $ML2_CONF ovs tunnel_bridge br-tun
+            TUNNEL_TYPES=vxlan
+            crudini --set $ML2_CONF agent tunnel_types $TUNNEL_TYPES
+        fi
+
+        if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+            crudini --set $ML2_CONF ml2_type_gre tunnel_id_ranges 1:1000
+            crudini --set $ML2_CONF ovs local_ip $INTERFACE_INT_IP
+            crudini --set $ML2_CONF ovs tunnel_bridge br-tun
+            if [[ -z $TUNNEL_TYPES ]]; then
+                TUNNEL_TYPES="gre"
+             else
+                TUNNEL_TYPES="$TUNNEL_TYPES,gre"
+             fi
+             crudini --set $ML2_CONF agent tunnel_types $TUNNEL_TYPES
+        fi
+
+        if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+            crudini --set $ML2_CONF ml2_type_vlan network_vlan_ranges $VLAN_RANGES
+            crudini --set $ML2_CONF ovs network_vlan_ranges $VLAN_RANGES
+            crudini --set $ML2_CONF ovs bridge_mappings physnet1:br-vlan
+
+        fi
 
         if [ $ML2_PLUGIN == 'openvswitch' ]; then
-            for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+            for file in $ML2_CONF /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
                 if [ -e $file ]; then
                     crudini --set $file ovs integration_bridge br-int
                     ## crudini --set $file ovs bridge_mappings external:br-ex
@@ -106,8 +258,6 @@ function _neutron_configure() {
                         crudini --set $file ovs tunnel_bridge br-tun
                         TUNNEL_TYPES=vxlan
                         crudini --set $file agent tunnel_types $TUNNEL_TYPES
-
-                        ovs-vsctl --may-exist add-br br-tun
                     fi
 
                     if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
@@ -120,15 +270,11 @@ function _neutron_configure() {
                          fi
                          crudini --set $file agent tunnel_types $TUNNEL_TYPES
 
-                         ovs-vsctl --may-exist add-br br-tun
                     fi
 
                     if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
-                        crudini --set $file ovs network_vlan_ranges physnet1:$VLAN_RANGES
+                        crudini --set $file ovs network_vlan_ranges $VLAN_RANGES
                         crudini --set $file ovs bridge_mappings physnet1:br-vlan
-
-                        ovs-vsctl --may-exist add-br br-vlan
-                        ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
                     fi
                 fi
             done
@@ -136,7 +282,7 @@ function _neutron_configure() {
     fi
 
     if [ ! -e "/etc/neutron/plugin.ini" ]; then
-        ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+        ln -s $ML2_CONF /etc/neutron/plugin.ini
     fi
 
     ## configure the Layer-3 (L3) agent /etc/neutron/l3_agent.ini
@@ -177,5 +323,5 @@ function _neutron_configure() {
         crudini --set /etc/neutron/metadata_agent.ini DEFAULT debug True
     fi
 
-    _neutron_dvr_configure $1
+    export _NEUTRON_CONFIGED=True
 }

@@ -479,16 +479,7 @@ function neutron_network() {
     systemctl enable openvswitch.service
     systemctl restart openvswitch.service
 
-    if [ $ML2_PLUGIN == 'openvswitch' ]; then
-        for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
-            if [ -e $file ]; then
-                crudini --set $file ovs bridge_mappings external:br-ex
-            fi
-        done
-    fi
 
-    ovs-vsctl --may-exist add-br br-ex
-    ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
 
     systemctl enable neutron-openvswitch-agent.service neutron-l3-agent.service \
     neutron-dhcp-agent.service neutron-metadata-agent.service neutron-ovs-cleanup.service

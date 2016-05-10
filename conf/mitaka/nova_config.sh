@@ -60,7 +60,7 @@ function _nova_configure() {
 
         crudini --set $NOVA_CONF cinder os_region_name $REGION
 
-        if [ ! -z $1 ] && [ 'nova_ctrl' =~ "$1" ]; then
+        if [ ! -z $1 ] && [[ 'nova_ctrl' =~ "$1" ]]; then
             su -s /bin/sh -c "nova-manage api_db sync" nova
             su -s /bin/sh -c "nova-manage db sync" nova
         fi

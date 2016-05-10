@@ -31,7 +31,7 @@ function _neutron_dvr_configure() {
         fi
 
         if [[ "$ML2_PLUGIN" == 'openvswitch' ]]; then
-            for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+            for file in "$ML2_CONF" "$OVS_CONF" ; do
                 if [ -e $file ]; then
                     crudini --set $file ovs tunnel_bridge br-tun
                     crudini --set $file agent enable_distributed_routing True
@@ -113,6 +113,7 @@ function _neutron_configure() {
             _neutron_dvr_configure $1
             _neutron_fortinet_configure $1
             ;;
+
         'neutron_compute' )
             _neutron_dvr_configure $1
             if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
@@ -130,8 +131,10 @@ function _neutron_configure() {
                 fi
             fi
             ;;
+
         'neutron_network' )
             _neutron_dvr_configure $1
+
             if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
                 if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
                         ovs-vsctl --may-exist add-br br-tun
@@ -145,8 +148,17 @@ function _neutron_configure() {
                     ovs-vsctl --may-exist add-br br-vlan
                     ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
                 fi
+
+                for file in /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
+                    if [ -e $file ]; then
+                        crudini --set $file ovs bridge_mappings external:br-ex
+                    fi
+                done
+                ovs-vsctl --may-exist add-br br-ex
+                ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
             fi
             ;;
+
         * ) echo "The inputed params $1 is invaild."
             exit 12
             ;;
@@ -236,12 +248,9 @@ function _neutron_configure() {
 
         if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
             crudini --set $ML2_CONF ml2_type_vlan network_vlan_ranges $VLAN_RANGES
-
             crudini --set $ML2_CONF ovs network_vlan_ranges $VLAN_RANGES
             crudini --set $ML2_CONF ovs bridge_mappings physnet1:br-vlan
-
         fi
-
 
         if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
 			if [ -e $OVS_CONF ]; then
