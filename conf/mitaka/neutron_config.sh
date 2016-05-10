@@ -197,7 +197,7 @@ function _neutron_configure() {
         fi
 
 
-        if [ $ML2_PLUGIN == 'openvswitch' ]; then
+        if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
 			if [ -e $OVS_CONF ]; then
 				crudini --set $OVS_CONF ovs integration_bridge br-int
 				## crudini --set $OVS_CONF ovs bridge_mappings external:br-ex
@@ -207,8 +207,9 @@ function _neutron_configure() {
 					crudini --set $OVS_CONF ovs tunnel_bridge br-tun
 					TUNNEL_TYPES=vxlan
 					crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
-
-					ovs-vsctl --may-exist add-br br-tun
+                    if [[ 'neutron_ctrl' != "$1" ]]; then
+					    ovs-vsctl --may-exist add-br br-tun
+					fi
 				fi
 
 				if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
@@ -216,20 +217,24 @@ function _neutron_configure() {
 					crudini --set $OVS_CONF ovs tunnel_bridge br-tun
 					if [[ -z $TUNNEL_TYPES ]]; then
 						TUNNEL_TYPES="gre"
-					 else
+					else
 						TUNNEL_TYPES="$TUNNEL_TYPES,gre"
-					 fi
-					 crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
+					fi
 
-					 ovs-vsctl --may-exist add-br br-tun
+					crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
+
+                    if [[ 'neutron_ctrl' != "$1" ]]; then
+					    ovs-vsctl --may-exist add-br br-tun
+					fi
 				fi
 
 				if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
 					crudini --set $OVS_CONF ovs network_vlan_ranges $VLAN_RANGES
 					crudini --set $OVS_CONF ovs bridge_mappings physnet1:br-vlan
-
-					ovs-vsctl --may-exist add-br br-vlan
-					ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
+					if [[ 'neutron_ctrl' != "$1" ]]; then
+					    ovs-vsctl --may-exist add-br br-vlan
+					    ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
+					fi
 				fi
 			fi
         fi
