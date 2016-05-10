@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function _nova_configure() {
     if [ -e "$NOVA_CONF" ]; then
         crudini --set $NOVA_CONF api_database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova_api
@@ -63,7 +65,12 @@ function _nova_configure() {
 
         crudini --set $NOVA_CONF cinder os_region_name $REGION
 
-        su -s /bin/sh -c "nova-manage api_db sync" nova
-        su -s /bin/sh -c "nova-manage db sync" nova
+        if [ ! -z $1 ] && [ 'nova_compute' =~ "$1" ]; then
+            yum install -y libvirt-daemon-config-nwfilter libvirt-daemon-driver-nwfilter
+
+        elif [ ! -z $1 ] && [ 'nova_ctrl' =~ "$1" ]; then
+            su -s /bin/sh -c "nova-manage api_db sync" nova
+            su -s /bin/sh -c "nova-manage db sync" nova
+        fi
     fi
 }

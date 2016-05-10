@@ -421,7 +421,7 @@ function nova_ctrl() {
     yum install -y openstack-nova-api openstack-nova-cert openstack-nova-conductor \
       openstack-nova-console openstack-nova-novncproxy openstack-nova-scheduler
 
-    _nova_configure
+    _nova_configure nova_ctrl
 
 
     systemctl enable openstack-nova-api.service openstack-nova-cert.service \
@@ -437,7 +437,7 @@ function nova_ctrl() {
 function nova_compute() {
     yum install -y openstack-nova-compute sysfsutils
 
-    _nova_configure
+    _nova_configure nova_compute
 
     systemctl enable libvirtd.service openstack-nova-compute.service
     systemctl restart libvirtd.service openstack-nova-compute.service
