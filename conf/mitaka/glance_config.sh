@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 function _glance_configure() {
     crudini --set /etc/glance/glance-api.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
     crudini --set /etc/glance/glance-api.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
@@ -11,7 +13,10 @@ function _glance_configure() {
     crudini --set /etc/glance/glance-api.conf keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
 
     crudini --set /etc/glance/glance-api.conf paste_deploy flavor keystone
+
+    crudini --set /etc/glance/glance-api.conf DEFAULT debug True
     crudini --set /etc/glance/glance-api.conf DEFAULT notification_driver noop
+
 
     crudini --set /etc/glance/glance-registry.conf database connection mysql://$DB_USER_GLANCE:$DB_PWD_GLANCE@$CTRL_MGMT_IP/glance
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
@@ -25,5 +30,7 @@ function _glance_configure() {
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
 
     crudini --set /etc/glance/glance-registry.conf paste_deploy flavor keystone
+
+    crudini --set /etc/glance/glance-registry.conf DEFAULT debug True
     crudini --set /etc/glance/glance-registry.conf DEFAULT notification_driver noop
 }

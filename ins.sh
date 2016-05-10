@@ -5,7 +5,7 @@
 # eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
 # centos use
 
-CTRL_MGMT_IP=10.160.37.60
+CTRL_MGMT_IP=
 
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
@@ -68,6 +68,8 @@ export IMAGE_FILE=${IMAGE_FILE:-"cirros-0.3.4-x86_64-disk.img"}
 export IMAGE_URL=${IMAGE_URL:-"http://download.cirros-cloud.net/0.3.4/$IMAGE_FILE"}
 export IMAGE_NAME=${IMAGE_NAME:-'cirros-0.3.4-x86_64'}
 
+# service plugins
+export SERVICE_PLUGINS=${SERVICE_PLUGINS:-router_fortinet,fwaas_fortinet}
 # ml2 plugin configuration
 export ML2_PLUGIN=${ML2_PLUGIN:-openvswitch}
 export TYPE_DR=${TYPE_DR:-vlan}
@@ -76,8 +78,10 @@ export SECURITY_GROUP_ENABLE=${SECURITY_GROUP_ENABLE:-False}
 # config file path
 export KEYSTONE_CONF=${KEYSTONE_CONF:-"/etc/keystone/keystone.conf"}
 export NOVA_CONF=${NOVA_CONF:-"/etc/nova/nova.conf"}
-export NEUTRON_CONF=${NEUTRON_CONF:-"/etc/neutron/neutron.conf"}
 export CINDER_CONF=${CINDER_CONF:-"/etc/cinder/cinder.conf"}
+export NEUTRON_CONF=${NEUTRON_CONF:-"/etc/neutron/neutron.conf"}
+export ML2_CONF=${ML2_CONF:-"/etc/neutron/plugins/ml2/ml2_conf.ini"}
+export OVS_CONF=${OVS_CONF:-"/etc/neutron/plugins/ml2/openvswitch_agent.ini"}
 
 export INS_KERNELS=${INS_KERNELS:-2}
 
@@ -392,7 +396,7 @@ function glance() {
         local _COUNT=0
         while true; do
             sleep 2s
-            netstat -anp|grep 9292
+            (netstat -anp|grep 9292) && (netstat -anp|grep 9191)
             if [ $? -eq 0 ]; then
                 break
             fi
