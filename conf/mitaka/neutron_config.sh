@@ -88,10 +88,11 @@ please set them and run again.
                 fi
             fi
 
-            if [[ 'fwaas_fortinet' =~ "$SERVICE_PLUGINS" ]]; then
+            if [[ $SERVICE_PLUGINS =~(^|[,])'fwaas_fortinet'($|[,]) ]]; then
                 yum install -y openstack-neutron-fwaas
-                pip install --upgrade networking-fortinet
             fi
+
+            pip install --upgrade networking-fortinet
 
             if [ -e $NEUTRON_CONF ]; then
                 crudini --set $NEUTRON_CONF DEFAULT service_plugins $SERVICE_PLUGINS
