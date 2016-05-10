@@ -395,7 +395,7 @@ function glance() {
 
         local _COUNT=0
         while true; do
-            sleep 2s
+            sleep 20s
             (netstat -anp|grep 9292) && (netstat -anp|grep 9191)
             if [ $? -eq 0 ]; then
                 break
