@@ -84,7 +84,7 @@ please set them and run again.
                     crudini --set $ML2_CONF ml2_fortinet address ${FORTINET_ADDRESS}
                     crudini --set $ML2_CONF ml2_fortinet enable_default_fwrule ${FORTINET_ENABLE_DEFAULT_FWRULE}
 
-                    crudini --set $ML2_CONF ml2 mechanism_drivers fortinet,$ML2_PLUGIN,l2population
+                    crudini --set $ML2_CONF ml2 mechanism_drivers fortinet,$ML2_PLUGIN
                 fi
             fi
 
