@@ -107,6 +107,52 @@ function _neutron_configure() {
     if [ -z "$KEYSTONE_T_ID_SERVICE" ]; then
         export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
     fi
+
+    case "$1" in
+        'neutron_ctrl' )
+            _neutron_dvr_configure $1
+            _neutron_fortinet_configure $1
+            ;;
+        'neutron_compute' )
+            _neutron_dvr_configure $1
+            if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
+                if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                        ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                            ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-vlan
+                    ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
+                fi
+            fi
+            ;;
+        'neutron_network' )
+            _neutron_dvr_configure $1
+            if [[ $ML2_PLUGIN =~ 'openvswitch' ]]; then
+                if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                        ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                            ovs-vsctl --may-exist add-br br-tun
+                fi
+
+                if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                    ovs-vsctl --may-exist add-br br-vlan
+                    ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
+                fi
+            fi
+            ;;
+        * ) echo "The inputed params $1 is invaild."
+            exit 12
+            ;;
+    esac
+
+
     # $NEUTRON_CONF configuration
     if [ ! -z $_NEUTRON_CONFIGED ]; then
         return
@@ -207,9 +253,6 @@ function _neutron_configure() {
 					crudini --set $OVS_CONF ovs tunnel_bridge br-tun
 					TUNNEL_TYPES=vxlan
 					crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
-                    if [[ 'neutron_ctrl' != "$1" ]]; then
-					    ovs-vsctl --may-exist add-br br-tun
-					fi
 				fi
 
 				if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
@@ -222,19 +265,11 @@ function _neutron_configure() {
 					fi
 
 					crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
-
-                    if [[ 'neutron_ctrl' != "$1" ]]; then
-					    ovs-vsctl --may-exist add-br br-tun
-					fi
 				fi
 
 				if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
 					crudini --set $OVS_CONF ovs network_vlan_ranges $VLAN_RANGES
 					crudini --set $OVS_CONF ovs bridge_mappings physnet1:br-vlan
-					if [[ 'neutron_ctrl' != "$1" ]]; then
-					    ovs-vsctl --may-exist add-br br-vlan
-					    ovs-vsctl --may-exist add-port br-vlan $INTERFACE_INT
-					fi
 				fi
 			fi
         fi
@@ -282,8 +317,7 @@ function _neutron_configure() {
         crudini --set /etc/neutron/metadata_agent.ini DEFAULT debug True
     fi
 
-    _neutron_dvr_configure $1
-    _neutron_fortinet_configure $1
+
 
     export _NEUTRON_CONFIGED=True
 }
