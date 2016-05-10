@@ -107,7 +107,7 @@ function _neutron_configure() {
         export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
     fi
     # $NEUTRON_CONF configuration
-    if [ -z $_NEUTRON_CONFIGED ]; then
+    if [ ! -z $_NEUTRON_CONFIGED ]; then
         return
     fi
 
@@ -188,9 +188,9 @@ function _neutron_configure() {
         fi
 
         if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
-            crudini --set $OVS_CONF ml2_type_vlan network_vlan_ranges physnet1:$VLAN_RANGES
+            crudini --set $OVS_CONF ml2_type_vlan network_vlan_ranges $VLAN_RANGES
 
-            crudini --set $OVS_CONF ovs network_vlan_ranges physnet1:$VLAN_RANGES
+            crudini --set $OVS_CONF ovs network_vlan_ranges $VLAN_RANGES
             crudini --set $OVS_CONF ovs bridge_mappings physnet1:br-vlan
 
         fi
@@ -224,7 +224,7 @@ function _neutron_configure() {
 				fi
 
 				if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
-					crudini --set $OVS_CONF ovs network_vlan_ranges physnet1:$VLAN_RANGES
+					crudini --set $OVS_CONF ovs network_vlan_ranges $VLAN_RANGES
 					crudini --set $OVS_CONF ovs bridge_mappings physnet1:br-vlan
 
 					ovs-vsctl --may-exist add-br br-vlan

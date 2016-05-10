@@ -11,7 +11,7 @@ export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
 export INTERFACE_EXT=${INTERFACE_EXT:-eth2}
 
-export VLAN_RANGES=${VLAN_RANGES:-1000:2000}
+export VLAN_RANGES=${VLAN_RANGES:-physnet1:1009:1099}
 export INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
 export MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
 
