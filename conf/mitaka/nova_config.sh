@@ -8,14 +8,9 @@ function _nova_configure() {
         crudini --set $NOVA_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
         crudini --set $NOVA_CONF DEFAULT rabbit_password $RABBIT_PASS
         crudini --set $NOVA_CONF DEFAULT auth_strategy keystone
-        if [[ $INS_OPENSTACK_RELEASE == 'liberty' ]]; then
-            crudini --set $NOVA_CONF DEFAULT network_api_class nova.network.neutronv2.api.API
-        else
-            crudini --set $NOVA_CONF DEFAULT use_neutron True
-        fi
-
+        crudini --set $NOVA_CONF DEFAULT use_neutron True
         crudini --set $NOVA_CONF DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
-        #crudini --set $NOVA_CONF DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
+        crudini --set $NOVA_CONF DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
         crudini --set $NOVA_CONF DEFAULT security_group_api neutron
         crudini --set $NOVA_CONF DEFAULT my_ip $MGMT_IP
         crudini --set $NOVA_CONF DEFAULT vnc_enabled True
@@ -65,10 +60,7 @@ function _nova_configure() {
 
         crudini --set $NOVA_CONF cinder os_region_name $REGION
 
-        if [ ! -z $1 ] && [ 'nova_compute' =~ "$1" ]; then
-            yum install -y libvirt-daemon-config-nwfilter libvirt-daemon-driver-nwfilter
-
-        elif [ ! -z $1 ] && [ 'nova_ctrl' =~ "$1" ]; then
+        if [ ! -z $1 ] && [ 'nova_ctrl' =~ "$1" ]; then
             su -s /bin/sh -c "nova-manage api_db sync" nova
             su -s /bin/sh -c "nova-manage db sync" nova
         fi

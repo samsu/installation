@@ -395,7 +395,7 @@ function glance() {
 
         local _COUNT=0
         while true; do
-            sleep 20s
+            sleep 5s
             (netstat -anp|grep 9292) && (netstat -anp|grep 9191)
             if [ $? -eq 0 ]; then
                 break
@@ -411,7 +411,7 @@ function glance() {
           --disk-format qcow2 --container-format bare --public $IMAGE_NAME
         openstack image list
 
-        rm -rf /tmp/images
+        #rm -rf /tmp/images
     fi
 }
 
