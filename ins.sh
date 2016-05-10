@@ -4,8 +4,9 @@
 # ubuntu use
 # eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
 # centos use
+TOP_DIR=$(cd $(dirname "$0") && pwd)
 
-CTRL_MGMT_IP=
+source "$TOP_DIR/local.conf"
 
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
@@ -44,13 +45,13 @@ export CONFIG_DRIVE=${CONFIG_DRIVE:-True}
 
 # Need to update the params with name *FORTINET* to enable fortinet plugin on
 # neutron server in addition to manually boot up your own fortigate.
-export ENABLE_FORTINET_PLUGIN=${ENABLE_FORTINET_PLUGIN:-True}
+export ENABLE_FORTINET_PLUGIN=${ENABLE_FORTINET_PLUGIN:-False}
 # the fortigate management interface ip address
-export FORTINET_ADDRESS=
+export FORTINET_ADDRESS=${FORTINET_ADDRESS:-''}
 # The port in the fortigate to provide Openstack external network.
-export FORTINET_EXT_INTERFACE=
+export FORTINET_EXT_INTERFACE=${FORTINET_EXT_INTERFACE:-''}
 # The port in the fortigate to provide Openstack internal network(tenant network).
-export FORTINET_INT_INTERFACE=
+export FORTINET_INT_INTERFACE=${FORTINET_INT_INTERFACE:-''}
 
 export FORTINET_NPU_AVAILABLE=${FORTINET_NPU_AVAILABLE:-False}
 # username to access fortigate api (default None)
@@ -110,8 +111,8 @@ if [ $? -eq 1 ]; then
         [epel]="http://10.160.37.50/epel/\$releasever/x86_64"
         [cloud]='http://10.160.37.50/centos/\$releasever/cloud/\$basearch/openstack-${INS_OPENSTACK_RELEASE,,}/'
     )
-    export REPO_MIRROR_URLS
 fi
+export REPO_MIRROR_URLS
 
 declare -A REPO_FILES=(
     ['epel']="/etc/yum.repos.d/epel.repo"
@@ -152,7 +153,6 @@ function _import_config() {
     ##   admin_password
     ##  ==>
     ##   ${KEYS[$INS_OPENSTACK_RELEASE,KEYSTONE_U_PWD_GLANCE]:-admin_password}
-    TOP_DIR=$(cd $(dirname "$0") && pwd)
     _CONF_PATH="$TOP_DIR/conf/${INS_OPENSTACK_RELEASE,,}"
     _DB_CREATION="$_CONF_PATH/db_creation.sh"
 
