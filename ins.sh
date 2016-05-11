@@ -73,7 +73,7 @@ export IMAGE_NAME=${IMAGE_NAME:-'cirros-0.3.4-x86_64'}
 export SERVICE_PLUGINS=${SERVICE_PLUGINS:-router_fortinet,fwaas_fortinet}
 # ml2 plugin configuration
 export ML2_PLUGIN=${ML2_PLUGIN:-openvswitch}
-export TYPE_DR=${TYPE_DR:-vlan}
+export TYPE_DR=${TYPE_DR:-vxlan}
 export SECURITY_GROUP_ENABLE=${SECURITY_GROUP_ENABLE:-False}
 
 # config file path
@@ -102,8 +102,7 @@ export SUPPORTED_OPENSTACK_RELEASE
 export INS_OPENSTACK_RELEASE=${INS_OPENSTACK_RELEASE:-${SUPPORTED_OPENSTACK_RELEASE[-1]}}
 
 ## If there is any existed local repo mirror, updated the following variables.
-#REPO_MIRROR_ENABLE=FALSE
-export REPO_MIRROR_ENABLE=${REPO_MIRROR_ENABLE:-TRUE}
+export REPO_MIRROR_ENABLE=${REPO_MIRROR_ENABLE:-False}
 
 declare -p REPO_MIRROR_URLS > /dev/null 2>&1
 if [ $? -eq 1 ]; then

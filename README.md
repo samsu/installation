@@ -14,15 +14,16 @@ Prerequisites:
     1. Supported host os: Centos 7 and up minimal installation.
        e.g. CentOS-7-x86_64-Minimal-1511.iso
 
-    2. Three ethernet interfaces are required, these interfaces will by used
-       as below:
+    2. Three ethernet interfaces per host are required, these interfaces will 
+       be used as below:
            one interface for Openstack management, default eth0
            one interface for tenant network (vm <-> vm), default eth1
            one interface for external network (vm <-> outside ), default eth2
+       
        The management network nic and the tenant network nic should have
        an working static ipv4 address for each interface.
-       If your nic name or nic assignment is different with default, you need
-       to update the following three variables in the file ins.sh:
+       If your environment is different with default, you can customize related
+       variables in the file 'local.conf' according to your environment:
        e.g.
        the default:
            export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
@@ -34,7 +35,7 @@ Prerequisites:
            export INTERFACE_EXT=eno50332176
 
     3. If run multi-nodes installation, you need to assign controller ip on
-       the variable 'CTRL_MGMT_IP' in the file ins.sh
+       the variable 'CTRL_MGMT_IP' in the file 'local.conf'
            CTRL_MGMT_IP=[default is host INTERFACE_MGMT ip]
            e.g. CTRL_MGMT_IP=10.160.37.60
 
@@ -86,9 +87,35 @@ Rolenames:
 Examples:
 
     # Install all openstack stuff(allinone role) in one machine
-    ./ins.sh allinone
+    ./ins.sh -v mitaka allinone
 
     # Install two roles(nova controller and neutron controller) in a machine
     ./ins.sh nova_ctrl neutron_ctrl
+    
+    # Install Openstack with fortinet plugins
+    a) Before run the script, a fortigate need to be prepared properly.
+       1) license activated
+       2) enabled multi-vdom
+       3) At least there are 3 ports in the fortigate: a port for management
+       need to have a ip address, a port for openstack tenant network and 
+       a port for openstack external network. 
+    
+    b) customize the local.conf file, the following is an example local.conf
+       with enabled fortinet plugins
+        # openstack config
+        CTRL_MGMT_IP=10.160.37.80
+        INTERFACE_MGMT=eth0
+        INTERFACE_INT=eth1
+        INTERFACE_EXT=eth2
+        
+        # ml2 network type drive, could be vlan, gre, vxlan
+        TYPE_DR=vlan
+        
+        # Enable fortinet plugin, when ENABLE_FORTINET_PLUGIN, TYPE_DR only support vlan
+        ENABLE_FORTINET_PLUGIN=True
+        FORTINET_ADDRESS=10.160.37.96
+        FORTINET_EXT_INTERFACE=port9
+        FORTINET_INT_INTERFACE=port1
 
-
+    c) install Openstack components:
+        ./ins.sh controller compute        
