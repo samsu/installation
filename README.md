@@ -6,13 +6,13 @@ head of the script according to your setup.
 
 Network layout:
 
-1. Standard Openstack network layout
+    1. Standard Openstack network layout
 
 ![alt text](./docs/images/network_layout.png "Reference Network Layout")
     
-2. Openstack network layout integrated with Fortigate 
+    2. Openstack network layout integrated with Fortigate 
 
-![alt text](./docs/images/network_layout_with_fortigate.png)
+![alt text](./docs/images/network_layout_with_fortigate.png "Reference Network Layout")
 
 
 Prerequisites:
@@ -135,8 +135,7 @@ Examples:
 
 Notes:
 
-     If you are doing multi-modes installation, the suggested script run
-     sequence is 
+     If you are doing multi-modes installation, the suggested script run sequence is: 
      1. prepare your fortigate (if have)
      2. Install controller
      3. Install others (compute/network)
