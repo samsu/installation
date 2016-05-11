@@ -107,6 +107,37 @@ function _neutron_configure() {
         export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
     fi
 
+    if [ $ML2_PLUGIN == 'openvswitch' ]; then
+        if [ -e $OVS_CONF ]; then
+            crudini --set $file ovs integration_bridge br-int
+            ## crudini --set $file ovs bridge_mappings external:br-ex
+
+            if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
+                crudini --set $file ovs local_ip $INTERFACE_INT_IP
+                crudini --set $file ovs tunnel_bridge br-tun
+                TUNNEL_TYPES=vxlan
+                crudini --set $file agent tunnel_types $TUNNEL_TYPES
+            fi
+
+            if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
+                crudini --set $file ovs local_ip $INTERFACE_INT_IP
+                crudini --set $file ovs tunnel_bridge br-tun
+                if [[ -z $TUNNEL_TYPES ]]; then
+                    TUNNEL_TYPES="gre"
+                 else
+                    TUNNEL_TYPES="$TUNNEL_TYPES,gre"
+                 fi
+
+                 crudini --set $file agent tunnel_types $TUNNEL_TYPES
+            fi
+
+            if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
+                crudini --set $file ovs network_vlan_ranges $VLAN_RANGES
+                crudini --set $file ovs bridge_mappings physnet1:br-vlan
+            fi
+        fi
+    fi
+
     case "$1" in
         'neutron_ctrl' )
             _neutron_dvr_configure $1
@@ -245,39 +276,6 @@ function _neutron_configure() {
             crudini --set $ML2_CONF ovs network_vlan_ranges $VLAN_RANGES
             crudini --set $ML2_CONF ovs bridge_mappings physnet1:br-vlan
 
-        fi
-
-        if [ $ML2_PLUGIN == 'openvswitch' ]; then
-            for file in $ML2_CONF /etc/neutron/plugins/ml2/openvswitch_agent.ini ; do
-                if [ -e $file ]; then
-                    crudini --set $file ovs integration_bridge br-int
-                    ## crudini --set $file ovs bridge_mappings external:br-ex
-
-                    if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
-                        crudini --set $file ovs local_ip $INTERFACE_INT_IP
-                        crudini --set $file ovs tunnel_bridge br-tun
-                        TUNNEL_TYPES=vxlan
-                        crudini --set $file agent tunnel_types $TUNNEL_TYPES
-                    fi
-
-                    if [[ $TYPE_DR =~ (^|[,])'gre'($|[,]) ]]; then
-                        crudini --set $file ovs local_ip $INTERFACE_INT_IP
-                        crudini --set $file ovs tunnel_bridge br-tun
-                        if [[ -z $TUNNEL_TYPES ]]; then
-                            TUNNEL_TYPES="gre"
-                         else
-                            TUNNEL_TYPES="$TUNNEL_TYPES,gre"
-                         fi
-                         crudini --set $file agent tunnel_types $TUNNEL_TYPES
-
-                    fi
-
-                    if [[ $TYPE_DR =~ (^|[,])'vlan'($|[,]) ]]; then
-                        crudini --set $file ovs network_vlan_ranges $VLAN_RANGES
-                        crudini --set $file ovs bridge_mappings physnet1:br-vlan
-                    fi
-                fi
-            done
         fi
     fi
 
