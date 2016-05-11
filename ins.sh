@@ -461,11 +461,14 @@ function neutron_compute() {
     # install neutron components on compute nodes
     yum install -y openstack-neutron-ml2 openstack-neutron-openvswitch ipset
 
+    systemctl enable openvswitch.service
+    systemctl restart openvswitch.service
+
     _neutron_configure neutron_compute
 
     systemctl restart openstack-nova-compute.service
-    systemctl enable openvswitch.service neutron-openvswitch-agent.service
-    systemctl restart openvswitch.service neutron-openvswitch-agent.service
+    systemctl enable neutron-openvswitch-agent.service
+    systemctl restart neutron-openvswitch-agent.service
 
 }
 
@@ -473,13 +476,10 @@ function neutron_compute() {
 function neutron_network() {
     yum install -y openstack-neutron openstack-neutron-ml2 openstack-neutron-openvswitch
 
-
-    _neutron_configure neutron_network
-
     systemctl enable openvswitch.service
     systemctl restart openvswitch.service
 
-
+    _neutron_configure neutron_network
 
     systemctl enable neutron-openvswitch-agent.service neutron-l3-agent.service \
     neutron-dhcp-agent.service neutron-metadata-agent.service neutron-ovs-cleanup.service
