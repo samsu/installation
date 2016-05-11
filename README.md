@@ -92,9 +92,8 @@ Examples:
     # Install two roles(nova controller and neutron controller) in a machine
     ./ins.sh nova_ctrl neutron_ctrl
     
-    # Install Openstack with fortinet plugins
-    
-    ![alt text](./docs/images/network_layout_with_fortigate.png "Reference Network Layout")
+    # Install Openstack with fortinet plugins    
+![alt text](./docs/images/network_layout_with_fortigate.png "Reference Network Layout")    
     
     a) Before run the script, a fortigate need to be prepared properly.
        1) license activated
