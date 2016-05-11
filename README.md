@@ -12,7 +12,7 @@ Network layout:
     
 2. ) Openstack network layout integrated with Fortigate 
 
-![alt text](./docs/images/network_layout_with_fortigate.png "Reference Network Layout")
+![alt text](./docs/images/network_layout_with_fortigate.png)
 
 Prerequisites:
 
