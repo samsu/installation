@@ -6,13 +6,14 @@ head of the script according to your setup.
 
 Network layout:
 
-1. ) Standard Openstack network layout
+1. Standard Openstack network layout
 
 ![alt text](./docs/images/network_layout.png "Reference Network Layout")
     
-2. ) Openstack network layout integrated with Fortigate 
+2. Openstack network layout integrated with Fortigate 
 
 ![alt text](./docs/images/network_layout_with_fortigate.png)
+
 
 Prerequisites:
 
