@@ -1,4 +1,4 @@
-# Installation
+# Installation guide
 
 This script will help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
