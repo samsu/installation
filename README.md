@@ -102,6 +102,7 @@ Examples:
     
     b) customize the local.conf file, the following is an example local.conf
        with enabled fortinet plugins
+        ############## EXAMPLE local.conf #################
         # openstack config
         CTRL_MGMT_IP=10.160.37.80
         INTERFACE_MGMT=eth0
@@ -117,6 +118,8 @@ Examples:
         FORTINET_ADDRESS=10.160.37.96
         FORTINET_EXT_INTERFACE=port9
         FORTINET_INT_INTERFACE=port1
-
+        
+        ###################################################
+        
     c) install Openstack components:
         ./ins.sh controller compute        
