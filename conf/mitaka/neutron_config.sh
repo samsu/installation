@@ -227,11 +227,15 @@ function _neutron_configure() {
 
         ## config metadata agent /etc/neutron/metadata_agent.ini
         if [ -e "/etc/neutron/metadata_agent.ini" ]; then
-            crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_url http://$CTRL_MGMT_IP:5000/v3
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_uri http://$CTRL_MGMT_IP:5000
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_url http://$CTRL_MGMT_IP:35357
             crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_region $REGION
-            crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_tenant_name $KEYSTONE_T_NAME_SERVICE
-            crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_user $KEYSTONE_U_NEUTRON
-            crudini --set /etc/neutron/metadata_agent.ini DEFAULT admin_password $KEYSTONE_U_PWD_NEUTRON
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT auth_plugin password
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT project_domain_id default
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT user_domain_id default
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT project_name $KEYSTONE_T_NAME_SERVICE
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT username $KEYSTONE_U_NEUTRON
+            crudini --set /etc/neutron/metadata_agent.ini DEFAULT password $KEYSTONE_U_PWD_NEUTRON
             crudini --set /etc/neutron/metadata_agent.ini DEFAULT nova_metadata_ip $CTRL_MGMT_IP
             crudini --set /etc/neutron/metadata_agent.ini DEFAULT metadata_proxy_shared_secret $METADATA_SECRET
             crudini --set /etc/neutron/metadata_agent.ini DEFAULT debug True
