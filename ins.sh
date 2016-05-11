@@ -179,13 +179,14 @@ function _repo() {
     fi
     if [[ ${REPO_MIRROR_ENABLE^^} == 'TRUE' ]]; then
         for REPO_MIRROR in "${!REPO_MIRROR_URLS[@]}"; do
+            eval _REPO_FILE="${REPO_FILES[$REPO_MIRROR]}"
+            eval _REPO_URL="${REPO_MIRROR_URLS[$REPO_MIRROR]}"
+
             if [[ $REPO_MIRROR == 'epel' ]]; then
-                crudini --set ${REPO_FILES[$REPO_MIRROR]} epel baseurl "${REPO_MIRROR_URLS[$REPO_MIRROR]}"
-                crudini --del ${REPO_FILES[$REPO_MIRROR]} epel mirrorlist
+                crudini --set ${_REPO_FILE} epel baseurl ${_REPO_URL}
+                crudini --del ${_REPO_FILE} epel mirrorlist
             elif [[ $REPO_MIRROR == 'cloud' ]]; then
-                eval _REPO_FILE="${REPO_FILES[$REPO_MIRROR]}"
-                eval _REPO_URL="${REPO_MIRROR_URLS[$REPO_MIRROR]}"
-                crudini --set $_REPO_FILE centos-openstack-$INS_OPENSTACK_RELEASE baseurl $_REPO_URL
+                crudini --set ${_REPO_FILE} centos-openstack-$INS_OPENSTACK_RELEASE baseurl ${_REPO_URL}
             fi
         done
         yum clean metadata

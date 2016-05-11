@@ -127,8 +127,8 @@ function _neutron_configure() {
             crudini --set $NEUTRON_CONF nova auth_plugin password
             crudini --set $NEUTRON_CONF nova project_domain_id default
             crudini --set $NEUTRON_CONF nova user_domain_id default
-            crudini --set $NEUTRON_CONF nova region_name regionOne
-            crudini --set $NEUTRON_CONF nova project_name $KEYSTONE_T_ID_SERVICE
+            crudini --set $NEUTRON_CONF nova region_name $REGION
+            crudini --set $NEUTRON_CONF nova project_name $KEYSTONE_T_NAME_SERVICE
             crudini --set $NEUTRON_CONF nova username $KEYSTONE_U_NOVA
             crudini --set $NEUTRON_CONF nova password $KEYSTONE_U_PWD_NOVA
 
