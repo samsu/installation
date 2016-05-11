@@ -109,7 +109,7 @@ function _neutron_configure() {
     fi
 
     # $NEUTRON_CONF configuration
-    if [ ! -z $_NEUTRON_CONFIGED ]; then
+    if [ -z $_NEUTRON_CONFIGED ]; then
         if [ -e "$NEUTRON_CONF" ]; then
             crudini --set $NEUTRON_CONF DEFAULT debug True
             crudini --set $NEUTRON_CONF DEFAULT rpc_backend rabbit
