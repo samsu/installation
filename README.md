@@ -6,8 +6,13 @@ head of the script according to your setup.
 
 Network layout:
 
+1. ) Standard Openstack network layout
+
 ![alt text](./docs/images/network_layout.png "Reference Network Layout")
     
+2. ) Openstack network layout integrated with Fortigate 
+
+![alt text](./docs/images/network_layout_with_fortigate.png "Reference Network Layout")
 
 Prerequisites:
 
@@ -92,9 +97,7 @@ Examples:
     # Install two roles(nova controller and neutron controller) in a machine
     ./ins.sh nova_ctrl neutron_ctrl
     
-    # Install Openstack with fortinet plugins    
-![alt text](./docs/images/network_layout_with_fortigate.png "Reference Network Layout")    
-    
+    # Install Openstack with fortinet plugins
     a) Before run the script, a fortigate need to be prepared properly.
        1) license activated
        2) enabled multi-vdom
