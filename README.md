@@ -121,5 +121,16 @@ Examples:
         
         ###################################################
         
-    c) install Openstack components:
-        ./ins.sh controller compute        
+    c) install Openstack controller on a host:
+        ./ins.sh controller
+       
+       install Openstack compute on other hosts:
+        ./ins.sh compute
+
+    Notes:
+         1. If you are doing multi-modes installation, the suggested script 
+         sequence is 
+         1. prepare your fortigate (if have)
+         2. Install controller
+         3. Install others (compute/network)
+         
