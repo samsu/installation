@@ -111,7 +111,7 @@ function _neutron_configure() {
 
 
     # $NEUTRON_CONF configuration
-    if [ ! -z $_NEUTRON_CONFIGED ]; then
+    if [ -z $_NEUTRON_CONFIGED ]; then
         # $NEUTRON_CONF configuration
         if [ -e "$NEUTRON_CONF" ]; then
             crudini --set $NEUTRON_CONF DEFAULT debug True
