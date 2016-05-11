@@ -248,7 +248,11 @@ function _neutron_configure() {
             if [[ $TYPE_DR =~ (^|[,])'vxlan'($|[,]) ]]; then
                 crudini --set $OVS_CONF ovs local_ip $INTERFACE_INT_IP
                 crudini --set $OVS_CONF ovs tunnel_bridge br-tun
-                TUNNEL_TYPES=vxlan
+                if [[ -z $TUNNEL_TYPES ]]; then
+                    TUNNEL_TYPES=vxlan
+                else
+                    TUNNEL_TYPES="$TUNNEL_TYPES,vxlan"
+                fi
                 crudini --set $OVS_CONF agent tunnel_types $TUNNEL_TYPES
             fi
 
