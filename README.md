@@ -10,7 +10,7 @@ Network layout:
 
 ![alt text](./docs/images/network_layout.png "Reference Network Layout")
     
-    2. Openstack network layout integrated with Fortigate 
+    2. Openstack network layout with Fortigate 
 
 ![alt text](./docs/images/network_layout_with_fortigate.png "Reference Network Layout")
 
