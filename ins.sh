@@ -185,8 +185,8 @@ function _repo() {
             eval _REPO_URL="${REPO_MIRROR_URLS[$REPO_MIRROR]}"
 
             if [[ $REPO_MIRROR == 'base' ]] || [[ $REPO_MIRROR == 'epel' ]]; then
-                crudini --set ${_REPO_FILE} epel baseurl ${_REPO_URL}
-                crudini --del ${_REPO_FILE} epel mirrorlist
+                crudini --set ${_REPO_FILE} $REPO_MIRROR baseurl ${_REPO_URL}
+                crudini --del ${_REPO_FILE} $REPO_MIRROR mirrorlist
             elif [[ $REPO_MIRROR == 'cloud' ]]; then
                 crudini --set ${_REPO_FILE} centos-openstack-$INS_OPENSTACK_RELEASE baseurl ${_REPO_URL}
             fi
