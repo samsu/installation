@@ -115,6 +115,7 @@ fi
 export REPO_MIRROR_URLS
 
 declare -A REPO_FILES=(
+    ['base']='/etc/yum.repos.d/CentOS-Base.repo'
     ['epel']="/etc/yum.repos.d/epel.repo"
     ['cloud']='/etc/yum.repos.d/CentOS-OpenStack-$INS_OPENSTACK_RELEASE.repo'
 )
@@ -183,7 +184,7 @@ function _repo() {
             eval _REPO_FILE="${REPO_FILES[$REPO_MIRROR]}"
             eval _REPO_URL="${REPO_MIRROR_URLS[$REPO_MIRROR]}"
 
-            if [[ $REPO_MIRROR == 'epel' ]]; then
+            if [[ $REPO_MIRROR == 'base' ]] || [[ $REPO_MIRROR == 'epel' ]]; then
                 crudini --set ${_REPO_FILE} epel baseurl ${_REPO_URL}
                 crudini --del ${_REPO_FILE} epel mirrorlist
             elif [[ $REPO_MIRROR == 'cloud' ]]; then
