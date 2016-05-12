@@ -118,6 +118,7 @@ Examples:
         
         # ml2 network type drive, could be vlan, gre, vxlan
         TYPE_DR=vlan
+        VLAN_RANGES=physnet1:1000:1100
         
         # Enable fortinet plugin, when ENABLE_FORTINET_PLUGIN, TYPE_DR only 
         # support vlan
