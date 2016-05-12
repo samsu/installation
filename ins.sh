@@ -107,7 +107,7 @@ export REPO_MIRROR_ENABLE=${REPO_MIRROR_ENABLE:-False}
 declare -p REPO_MIRROR_URLS > /dev/null 2>&1
 if [ $? -eq 1 ]; then
     declare -A REPO_MIRROR_URLS=(
-        [epel]="http://10.160.37.50/epel/\$releasever/x86_64"
+        [epel]='http://10.160.37.50/epel/\$releasever/x86_64'
         [cloud]='http://10.160.37.50/centos/\$releasever/cloud/\$basearch/openstack-${INS_OPENSTACK_RELEASE,,}/'
     )
 fi
