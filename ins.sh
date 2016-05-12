@@ -2,7 +2,7 @@
 
 ###########################################################################
 # ubuntu use
-# eth0=`ifconfig eth0 |grep 'inet addr' | cut -f 2 -d ":" | cut -f 1 -d " "`
+# eth0=$(ip address show eth0 | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 # centos use
 TOP_DIR=$(cd $(dirname "$0") && pwd)
 
@@ -13,8 +13,9 @@ export INTERFACE_INT=${INTERFACE_INT:-eth1}
 export INTERFACE_EXT=${INTERFACE_EXT:-eth2}
 
 export VLAN_RANGES=${VLAN_RANGES:-physnet1:1009:1099}
-export INTERFACE_INT_IP=`ifconfig $INTERFACE_INT |grep 'inet '| cut -f 10 -d " "`
-export MGMT_IP=`ifconfig $INTERFACE_MGMT |grep 'inet '| cut -f 10 -d " "`
+
+export INTERFACE_INT_IP=$(ip address show $INTERFACE_INT | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+export MGMT_IP=$(ip address show $INTERFACE_MGMT | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 
 export CTRL_MGMT_IP=${CTRL_MGMT_IP:-$MGMT_IP}
 
@@ -197,12 +198,12 @@ function _repo() {
 
 function _ntp() {
 
-    yum install -y ntp
+    yum install -y ntp net-tools
 
     systemctl enable ntpd.service
     systemctl stop ntpd.service
 
-    ifconfig |grep $NTPSRV >/dev/null
+    ip address |grep $NTPSRV >/dev/null
 
     if [ $? -eq 0 ]; then
         ntpdate -s ntp.org
