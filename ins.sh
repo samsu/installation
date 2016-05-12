@@ -591,10 +591,48 @@ rolenames:
 
     Examples:
         # Install all openstack stuff(allinone role) in one machine
-        ./ins.sh allinone
+        ./ins.sh -v mitaka allinone
 
         # Install two roles(nova controller and neutron controller) in a machine
         ./ins.sh nova_ctrl neutron_ctrl
+
+        # Install Openstack with fortinet plugins
+        a) Before run the script, a fortigate need to be initialized properly.
+           1) license activated
+           2) enabled multi-vdom
+           3) At least there are 3 ports in the fortigate: a port for management
+           need to have a ip address, a port for openstack tenant network and
+           a port for openstack external network.
+
+        b) Customize the local.conf file before run ins.sh
+            ############## EXAMPLE local.conf #################
+            # openstack config
+            CTRL_MGMT_IP=10.160.37.80
+            INTERFACE_MGMT=eth0
+            INTERFACE_INT=eth1
+            INTERFACE_EXT=eth2
+
+            TYPE_DR=vlan
+
+            ENABLE_FORTINET_PLUGIN=True
+            FORTINET_ADDRESS=10.160.37.96
+            FORTINET_EXT_INTERFACE=port9
+            FORTINET_INT_INTERFACE=port1
+
+            ###################################################
+
+        c) Install Openstack controller on a host:
+            ./ins.sh -v mitaka controller
+
+        d) Install Openstack compute on other hosts:
+            ./ins.sh -v mitaka compute
+
+    Notes:
+         If you are doing multi-modes installation, the suggested script run
+         sequence is:
+         1. prepare your fortigate (if have)
+         2. Install controller
+         3. Install others (compute/network)
 "
 
     if [ "$#" -eq 0 ]; then

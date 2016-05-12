@@ -99,14 +99,14 @@ Examples:
     ./ins.sh nova_ctrl neutron_ctrl
     
     # Install Openstack with fortinet plugins
-    a) Before run the script, a fortigate need to be prepared properly.
+    a) Before run the script, a fortigate need to be initialized properly.
        1) license activated
        2) enabled multi-vdom
        3) At least there are 3 ports in the fortigate: a port for management
        need to have a ip address, a port for openstack tenant network and 
        a port for openstack external network. 
     
-    b) customize the local.conf file, the following is an example local.conf
+    b) Customize the local.conf file, the following is an example local.conf
        with enabled fortinet plugins
         ############## EXAMPLE local.conf #################
         # openstack config
@@ -127,11 +127,11 @@ Examples:
         
         ###################################################
         
-    c) install Openstack controller on a host:
-        ./ins.sh controller
+    c) Install Openstack controller on a host:
+        ./ins.sh -v mitaka controller
        
-       install Openstack compute on other hosts:
-        ./ins.sh compute
+    d) Install Openstack compute on other hosts:
+        ./ins.sh -v mitaka compute
 
 Notes:
 
