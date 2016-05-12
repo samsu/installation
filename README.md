@@ -127,7 +127,7 @@ Examples:
         FORTINET_INT_INTERFACE=port1
         
         ###################################################
-        
+
     c) Install Openstack controller on a host:
         ./ins.sh -v mitaka controller
        
@@ -140,4 +140,3 @@ Notes:
      1. prepare your fortigate (if have)
      2. Install controller
      3. Install others (compute/network)
-         
