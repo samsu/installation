@@ -32,13 +32,13 @@ Prerequisites:
        variables in the file 'local.conf' according to your environment:
        e.g.
        the default:
-           export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
-           export INTERFACE_INT=${INTERFACE_INT:-eth1}
-           export INTERFACE_EXT=${INTERFACE_EXT:-eth2} 
+           INTERFACE_MGMT=eth0
+           INTERFACE_INT=eth1
+           INTERFACE_EXT=eth2 
        updated:
-           export INTERFACE_MGMT=eno16777728
-           export INTERFACE_INT=eno33554952
-           export INTERFACE_EXT=eno50332176
+           INTERFACE_MGMT=eno16777728
+           INTERFACE_INT=eno33554952
+           INTERFACE_EXT=eno50332176
 
     3. If run multi-nodes installation, you need to assign controller ip on
        the variable 'CTRL_MGMT_IP' in the file 'local.conf'
@@ -116,8 +116,10 @@ Examples:
         INTERFACE_INT=eth1
         INTERFACE_EXT=eth2
         
-        # ml2 network type drive, could be vlan, gre, vxlan
+        # ml2 network type drive, could be vlan, gre, vxlan.        
         TYPE_DR=vlan
+        # All Vlanid in vlan ranges used by tenant networks need to be
+        # pre-configured on all switches connected with tenant networks.
         VLAN_RANGES=physnet1:1000:1100
         
         # Enable fortinet plugin, when ENABLE_FORTINET_PLUGIN, TYPE_DR only 
