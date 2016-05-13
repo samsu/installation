@@ -78,7 +78,7 @@ network_creation() {
 
 
 function vm_creation() {
-    _VM_NAME=${$1:-test}
+    _VM_NAME=${1:-test}
     nova boot --flavor m1.tiny --image $IMAGE_NAME --nic net-id=$(neutron net-show net1 |grep " id "|awk '{print $4}') $_VM_NAME
 }
 
