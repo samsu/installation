@@ -614,8 +614,14 @@ rolenames:
             INTERFACE_INT=eth1
             INTERFACE_EXT=eth2
 
+            # ml2 network type drive, could be vlan, gre, vxlan.
             TYPE_DR=vlan
+            # All Vlanid in vlan ranges used by tenant networks need to be
+            # pre-configured on all switches connected with tenant networks.
+            VLAN_RANGES=physnet1:1000:1100
 
+            # Enable fortinet plugin, when ENABLE_FORTINET_PLUGIN, TYPE_DR only
+            # support vlan
             ENABLE_FORTINET_PLUGIN=True
             FORTINET_ADDRESS=10.160.37.96
             FORTINET_EXT_INTERFACE=port9
