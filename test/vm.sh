@@ -88,9 +88,13 @@ function ops() {
     image_upload
     network_creation
 
-    for vm in "$@"; do
-        vm_creation $vm
-    done
+    if [ -z "$@" ]; then
+        vm_creation
+    else
+        for vm in "$@"; do
+            vm_creation $vm
+        done
+    fi
 }
 
 function timestamp {
