@@ -33,7 +33,7 @@ for NIC in ${!NIC_NAME_MAP[@]}; do
 
     if [ ! -z $NEW_NIC ]; then
         MAC=$(cat /sys/class/net/$NIC/address) || exit $?
-        cat >> $NIC_CONF_FILE_PREFIX-$NEW_NIC < EOF
+        cat > $NIC_CONF_FILE_PREFIX-$NEW_NIC << EOF
 TYPE=Ethernet
 BOOTPROTO=none
 DEFROUTE=yes
