@@ -121,8 +121,8 @@ declare -A REPO_FILES=(
 )
 export REPO_FILES
 
-MAJOR_REL_VER=$(rpm -q --qf "%{VERSION}" $(rpm -q --whatprovides redhat-release))
-EPEL_GPG_KEY="RPM-GPG-KEY-EPEL-${MAJOR_REL_VER}"
+OS_MAJOR_REL_VER=$(rpm -q --qf "%{VERSION}" $(rpm -q --whatprovides redhat-release))
+EPEL_GPG_KEY="RPM-GPG-KEY-EPEL-${OS_MAJOR_REL_VER}"
 
 ## Assign security group drivers
 export SECURITY_GROUP_DRS=(
@@ -176,12 +176,7 @@ function _import_config() {
 function _repo() {
     yum clean metadata
     yum update -y
-
-    if [ ! -e /etc/pki/rpm-gpg/${EPEL_GPG_KEY} ]; then
-        cp $TOP_DIR/centos/gpgkeys/${EPEL_GPG_KEY} /etc/pki/rpm-gpg/.
-    fi
     yum install -y epel-release
-
     yum install -y centos-release-openstack-$INS_OPENSTACK_RELEASE
     if [ $? -ne 0 ]; then
         echo "## Fail to add Openstack repo centos-release-openstack-$INS_OPENSTACK_RELEASE"
