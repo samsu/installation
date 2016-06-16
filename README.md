@@ -1,8 +1,8 @@
 # Installation guide
 
 This script will help you to install specific openstack roles to the machine,
-before run the script, you need to update the environment variables in the
-head of the script according to your setup.
+before run the script, you need to update the environment variables in the 
+local.conf file according to your setup.
 
 Network layout:
 
@@ -18,7 +18,10 @@ Network layout:
 Prerequisites:
 
     1. Supported host os: Centos 7 and up minimal installation.
+       notes: disable related firewall functions after OS installation.
        e.g. CentOS-7-x86_64-Minimal-1511.iso
+       disable selinux (update /etc/selinux/config and restart os)
+       disable firewalld (systemctl disable firewalld) 
 
     2. Three ethernet interfaces per host are required, these interfaces will 
        be used as below:
