@@ -20,6 +20,8 @@ Prerequisites:
     1. Supported host os: Centos 7 and up minimal installation.
        notes: disable related firewall functions after OS installation.
        e.g. CentOS-7-x86_64-Minimal-1511.iso
+            (download link http://isoredirect.centos.org/centos/7/isos/x86_64/ )
+       
        disable selinux (update /etc/selinux/config and restart os)
        disable firewalld (systemctl disable firewalld) 
 
