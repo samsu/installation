@@ -227,7 +227,7 @@ function _ntp() {
     if [ $? -eq 0 ]; then
         ntpdate -s ntp.org
     else
-        sed -i.bak 's/^server 0.centos.pool.ntp.org iburst/server $NTPSRV/g' /etc/ntp.conf
+        sed -i.bak "s/^server 0.centos.pool.ntp.org iburst/server $NTPSRV/g" /etc/ntp.conf
         sed -i 's/^server 1.centos.pool.ntp.org iburst/# server 1.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 2.centos.pool.ntp.org iburst/# server 2.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 3.centos.pool.ntp.org iburst/# server 3.centos.pool.ntp.org iburst/g' /etc/ntp.conf
