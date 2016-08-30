@@ -424,7 +424,7 @@ function glance() {
                 echo "glance service cannot work properly."
                 exit 10
             fi
-            $((_COUNT++))
+            let $((_COUNT++))
         done
 
         openstack image create --file /tmp/images/$IMAGE_FILE \
