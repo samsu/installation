@@ -29,6 +29,7 @@ function _neutron_dvr_configure() {
         if [[ "$ML2_PLUGIN" == 'openvswitch' ]]; then
             for file in "$ML2_CONF" "$OVS_CONF" ; do
                 if [ -e $file ]; then
+                    crudini --set $file ml2 mechanism_drivers $ML2_PLUGIN,l2population
                     crudini --set $file ovs tunnel_bridge br-tun
                     crudini --set $file agent enable_distributed_routing True
                     crudini --set $file agent l2_population True
