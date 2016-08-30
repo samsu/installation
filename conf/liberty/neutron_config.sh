@@ -16,8 +16,6 @@ function _neutron_dvr_configure() {
         fi
 
         if [[ 'neutron_compute' =~ "$1" ]]; then
-            yum install -y openstack-neutron
-
             crudini --set /etc/neutron/l3_agent.ini DEFAULT agent_mode dvr
             crudini --set /etc/neutron/l3_agent.ini DEFAULT router_namespaces True
 
@@ -195,6 +193,10 @@ function _neutron_configure() {
         fi
 
         ## configure the Layer-3 (L3) agent /etc/neutron/l3_agent.ini
+        if [[ "${DVR^^}" == 'TRUE' ]] && [[ 'neutron_compute' =~ "$1" ]]; then
+            yum install -y openstack-neutron
+        fi
+
         if [ -e "/etc/neutron/l3_agent.ini" ]; then
             crudini --set /etc/neutron/l3_agent.ini DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
             crudini --set /etc/neutron/l3_agent.ini DEFAULT use_namespaces True
