@@ -408,10 +408,13 @@ function glance() {
     systemctl enable openstack-glance-api.service openstack-glance-registry.service
     systemctl restart openstack-glance-api.service openstack-glance-registry.service
 
+    [ -e ~/openrc ] && source ~/openrc
     openstack image show $IMAGE_NAME >/dev/null 2>&1
     if [ $? -ne 0 ]; then
-        mkdir -p /tmp/images
-        wget -P /tmp/images $IMAGE_URL
+        if [ ! -e /tmp/images/$IMAGE_FILE ]; then
+            mkdir -p /tmp/images
+            wget -P /tmp/images $IMAGE_URL
+        fi
 
         local _COUNT=0
         while true; do
@@ -426,7 +429,6 @@ function glance() {
             fi
             let $((_COUNT++))
         done
-
         openstack image create --file /tmp/images/$IMAGE_FILE \
           --disk-format qcow2 --container-format bare --public $IMAGE_NAME
         openstack image list
