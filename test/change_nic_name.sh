@@ -4,7 +4,7 @@
 hostname=""
 
 # The element format in the array NIC_NAME_MAP:
-# current_nic_name = new_nic_name [ip] [netmask] [gateway]
+# [ current_nic_name ] = "new_nic_name [ip] [netmask] [gateway]"
 declare -A NIC_NAME_MAP=(
     [eno16777728]="eth0 10.160.37.61 255.255.255.0 10.160.37.1"
     [eno33554952]="eth1 192.168.100.61 255.255.255.0"
