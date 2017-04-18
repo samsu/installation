@@ -37,9 +37,10 @@ function cfg_network() {
         netmask=$(echo $NETMASKS | awk -v i=$i '{print $i}')
         gateway=$(echo $GATEWAYS | awk -v i=$i '{print $i}')
 
-        if [ "${INITIP^^}" == "FALSE" ]; then
+        if [ "${INITIP^^}" == "FALSE" ] && [[ ! -z $gateway ]]; then
            ip addr add $ipaddr/$netmask dev $nic_cur_name
            ip link set $nic_cur_name up
+           ip route add default via $gateway
         fi
 
         if [ -e "$CFG_NET_PATH/ifcfg-$nic_cur_name" ] && [ ! -e "$CFG_NET_PATH/ifcfg-$nic_name" ]; then
