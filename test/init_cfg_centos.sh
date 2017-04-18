@@ -40,6 +40,7 @@ function cfg_network() {
         if [ "${INITIP^^}" == "FALSE" ] && [[ ! -z $gateway ]]; then
            ip addr add $ipaddr/$netmask dev $nic_cur_name
            ip link set $nic_cur_name up
+           ip route del default
            ip route add default via $gateway
         fi
 
