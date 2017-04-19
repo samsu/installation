@@ -102,6 +102,7 @@ function cfg_dis_fw() {
 function install_basic_pkgs() {
     yum update -y
     yum install -y net-tools tcpdump vim ntp wget
+    yum clean all
 }
 
 function main() {
