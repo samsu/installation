@@ -20,8 +20,12 @@ function cfg_hostname() {
 
 # disable the predictable naming rule
 function cfg_dis_name_predict() {
-    sed -i 's#GRUB_CMDLINE_LINUX="rd.lvm.lv=centos/root#GRUB_CMDLINE_LINUX="biosdevname=0 rd.lvm.lv=centos/root#g' /etc/default/grub
-    grub2-mkconfig -o /boot/grub2/grub.cfg
+    cur_value=$(crudini --get /etc/default/grub '' GRUB_CMDLINE_LINUX)
+    if [[ ! $cur_value == *"net.ifnames=0"* ]]; then
+        cur_value="net.ifnames=0 $cur_value"
+        crudini --set /etc/default/grub '' GRUB_CMDLINE_LINUX $cur_value
+        grub2-mkconfig -o /boot/grub2/grub.cfg
+    fi
 }
 
 # change nic naming style from enoxxxxx to ethxx
@@ -45,7 +49,7 @@ function cfg_network() {
         fi
 
         if [ -e "$CFG_NET_PATH/ifcfg-$nic_cur_name" ] && [ ! -e "$CFG_NET_PATH/ifcfg-$nic_name" ]; then
-            mac_addr=$(ip addr show eth0 | grep link/ether | awk '{print $2}')
+            mac_addr=$(ip addr show $nic_cur_name | grep link/ether | awk '{print $2}')
             echo "nic_cur_name=$nic_cur_name, nic_name=$nic_name, HWADDR=$mac_addr"
             cat >> "$CFG_NET_PATH/ifcfg-$nic_name" << EOF
 TYPE=Ethernet
@@ -101,13 +105,14 @@ function install_basic_pkgs() {
 }
 
 function main() {
-    cfg_dis_name_predict
     cfg_network
     cfg_dns
     cfg_repos
     cfg_hostname
     install_basic_pkgs
     cfg_dis_fw
+    cfg_dis_name_predict
+    reboot
 }
 
 main
