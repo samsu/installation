@@ -64,7 +64,7 @@ ONBOOT=yes
 HWADDR=$mac_addr
 EOF
             for param in 'ipaddr' 'netmask' 'gateway'; do
-                if [[ ! -z "${param// }" ]] && [[ ! -z $ipaddr ]]; then
+                if [[ ! -z "${!param// }" ]] && [[ ! -z $ipaddr ]]; then
                     echo "${param^^}=${!param}" >> $CFG_NET_PATH/ifcfg-$nic_name
                 fi
             done
