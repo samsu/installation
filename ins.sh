@@ -97,6 +97,8 @@ password: $KEYSTONE_U_ADMIN_PWD
 declare -a SUPPORTED_OPENSTACK_RELEASE=(
     liberty
     mitaka
+    newton
+    ocata
 )
 export SUPPORTED_OPENSTACK_RELEASE
 
