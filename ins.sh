@@ -293,7 +293,7 @@ function service_check() {
 # if the service is running return 0 else return 1
     netstat -anp|grep $2 > /dev/nul
     if [ $? -eq 0 ]; then
-        echo "Skip $1 installation, because $1 is running."
+        echo "Skip $1 installation, because a $1 service is running."
         return 0
     else
         echo "Installing $1..."
