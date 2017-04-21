@@ -469,7 +469,6 @@ function nova_ctrl() {
 
     _nova_configure nova_ctrl
 
-
     systemctl enable openstack-nova-api.service openstack-nova-cert.service \
       openstack-nova-consoleauth.service openstack-nova-scheduler.service \
       openstack-nova-conductor.service openstack-nova-novncproxy.service
