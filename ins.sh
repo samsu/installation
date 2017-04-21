@@ -110,8 +110,10 @@ export REPO_MIRROR_ENABLE=${REPO_MIRROR_ENABLE:-False}
 declare -p REPO_MIRROR_URLS > /dev/null 2>&1
 if [ $? -eq 1 ]; then
     declare -A REPO_MIRROR_URLS=(
-        [epel]='http://10.160.37.50/epel/\$releasever/x86_64'
-        [cloud]='http://10.160.37.50/centos/\$releasever/cloud/\$basearch/openstack-${INS_OPENSTACK_RELEASE,,}/'
+        ['base']='http://10.160.37.50/centos/$releasever/os/$basearch/'
+        ['epel']='http://10.160.37.50/epel/\$releasever/x86_64'
+        ['cloud']='http://10.160.37.50/centos/\$releasever/cloud/\$basearch/openstack-${INS_OPENSTACK_RELEASE,,}/'
+        ['virt']='http://10.160.37.50/centos/$releasever/virt/$basearch/kvm-common/'
     )
 fi
 export REPO_MIRROR_URLS
@@ -120,6 +122,7 @@ declare -A REPO_FILES=(
     ['base']='/etc/yum.repos.d/CentOS-Base.repo'
     ['epel']="/etc/yum.repos.d/epel.repo"
     ['cloud']='/etc/yum.repos.d/CentOS-OpenStack-$INS_OPENSTACK_RELEASE.repo'
+    ['virt']='/etc/yum.repos.d/CentOS-QEMU-EV.repo'
 )
 export REPO_FILES
 
@@ -209,6 +212,8 @@ function _repo() {
                 crudini --del ${_REPO_FILE} $REPO_MIRROR mirrorlist
             elif [[ $REPO_MIRROR == 'cloud' ]]; then
                 crudini --set ${_REPO_FILE} centos-openstack-$INS_OPENSTACK_RELEASE baseurl ${_REPO_URL}
+            elif [[ $REPO_MIRROR == 'virt' ]]; then
+                crudini --set ${_REPO_FILE} centos-qemu-ev baseurl ${_REPO_URL}
             fi
         done
         yum clean metadata
@@ -281,7 +286,23 @@ EOF
     source ~/openrc
 }
 
+# check service existence before installing it.
+function service_check() {
+# $1 is the service name, e.g. database
+# $2 is the listening port when the service was running, e.g. 3306
+# if the service is running return 0 else return 1
+    netstat -anp|grep $2 > /dev/nul
+    if [ $? -eq 0 ]; then
+        echo "Skip $1 installation, because $1 is running."
+        return 0
+    else
+        echo "Installing $1..."
+        return 1
+    fi
+}
+
 function database() {
+    service_check database 3306 && return
     yum install -y mariadb mariadb-server MySQL-python python-openstackclient
     # generate config file
     cat > /etc/my.cnf << EOF
@@ -367,6 +388,7 @@ expect eof
 
 
 function mq() {
+    service_check rabbitmq-server 5672 && return
     ## install rabbitmq
     yum install -y rabbitmq-server
 
