@@ -24,7 +24,7 @@ function _keystone_configure() {
 
     # configure apache http server
     sed -i "s#^ServerName www.example.com:80#ServerName 127.0.0.1#g" /etc/httpd/conf/httpd.conf
-    ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
+    [[ -e /etc/httpd/conf.d/wsgi-keystone.conf ]] || ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
     systemctl enable httpd.service
     systemctl restart httpd.service
     #systemctl enable openstack-keystone.service
