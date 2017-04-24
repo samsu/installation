@@ -31,7 +31,7 @@ function _keystone_configure() {
     export OS_TOKEN=$ADMIN_TOKEN
     export OS_URL=http://$CTRL_MGMT_IP:35357/v3
     export OS_IDENTITY_API_VERSION=3
-    if [[ -n OS_AUTH_URL ]]; then
+    if [[ -n $OS_AUTH_URL ]]; then
         unset OS_AUTH_URL
     fi
     #openstack domain show default || openstack domain create --description "Default Domain" default
