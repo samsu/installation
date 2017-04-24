@@ -34,6 +34,7 @@ function _keystone_configure() {
     #if [[ -n $OS_AUTH_URL ]]; then
     #    unset OS_AUTH_URL
     #fi
+    set |grep OS_
     openstack domain show default || openstack domain create --description "Default Domain" default
     #openstack project show $KEYSTONE_T_NAME_ADMIN || openstack project create --domain default --description "Admin Project" $KEYSTONE_T_NAME_ADMIN
     #openstack user show $KEYSTONE_U_ADMIN || openstack user create --domain default --password $KEYSTONE_U_ADMIN_PWD $KEYSTONE_U_ADMIN
