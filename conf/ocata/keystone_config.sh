@@ -28,19 +28,19 @@ function _keystone_configure() {
     systemctl enable httpd.service
     systemctl restart httpd.service
 
-    export OS_TOKEN=$ADMIN_TOKEN
-    export OS_URL=http://$CTRL_MGMT_IP:35357/v3
-    export OS_IDENTITY_API_VERSION=3
-    if [[ -n $OS_AUTH_URL ]]; then
-        unset OS_AUTH_URL
-    fi
-    #openstack domain show default || openstack domain create --description "Default Domain" default
-    openstack project show $KEYSTONE_T_NAME_ADMIN || openstack project create --domain default --description "Admin Project" $KEYSTONE_T_NAME_ADMIN
-    openstack user show $KEYSTONE_U_ADMIN || openstack user create --domain default --password $KEYSTONE_U_ADMIN_PWD $KEYSTONE_U_ADMIN
-    openstack role show $KEYSTONE_R_NAME_ADMIN || openstack role create $KEYSTONE_R_NAME_ADMIN
-    openstack role show $KEYSTONE_R_NAME_MEMBER || (openstack role create $KEYSTONE_R_NAME_MEMBER && \
-    openstack user role list | grep $KEYSTONE_U_ADMIN || openstack role add --project $KEYSTONE_T_NAME_ADMIN --user $KEYSTONE_U_ADMIN $KEYSTONE_R_NAME_ADMIN)
-    openstack project show $KEYSTONE_T_NAME_SERVICE || openstack project create --domain default --description "Service Project" $KEYSTONE_T_NAME_SERVICE
+    #export OS_TOKEN=$ADMIN_TOKEN
+    #export OS_URL=http://$CTRL_MGMT_IP:35357/v3
+    #export OS_IDENTITY_API_VERSION=3
+    #if [[ -n $OS_AUTH_URL ]]; then
+    #    unset OS_AUTH_URL
+    #fi
+    openstack domain show default || openstack domain create --description "Default Domain" default
+    #openstack project show $KEYSTONE_T_NAME_ADMIN || openstack project create --domain default --description "Admin Project" $KEYSTONE_T_NAME_ADMIN
+    #openstack user show $KEYSTONE_U_ADMIN || openstack user create --domain default --password $KEYSTONE_U_ADMIN_PWD $KEYSTONE_U_ADMIN
+    #openstack role show $KEYSTONE_R_NAME_ADMIN || openstack role create $KEYSTONE_R_NAME_ADMIN
+    #openstack role show $KEYSTONE_R_NAME_MEMBER || (openstack role create $KEYSTONE_R_NAME_MEMBER && \
+    #openstack user role list | grep $KEYSTONE_U_ADMIN || openstack role add --project $KEYSTONE_T_NAME_ADMIN --user $KEYSTONE_U_ADMIN $KEYSTONE_R_NAME_ADMIN)
+    #openstack project show $KEYSTONE_T_NAME_SERVICE || openstack project create --domain default --description "Service Project" $KEYSTONE_T_NAME_SERVICE
 
     # unset OS_TOKEN OS_URL
     # sed -i 's/sizelimit url_normalize request_id build_auth_context token_auth admin_token_auth json_body ec2_extension user_crud_extension public_service/sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension user_crud_extension public_service/g' /etc/keystone/keystone-paste.ini
