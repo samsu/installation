@@ -16,7 +16,7 @@ function _keystone_configure() {
 
     su -s /bin/sh -c "keystone-manage db_sync" keystone
 
-    keystone-manage bootstrap --bootstrap-password $ADMIN_TOKEN \
+    keystone-manage bootstrap --bootstrap-password $KEYSTONE_U_ADMIN_PWD \
       --bootstrap-admin-url http://$CTRL_MGMT_IP:35357/v3/ \
       --bootstrap-internal-url http://$CTRL_MGMT_IP:5000/v3/ \
       --bootstrap-public-url http://$CTRL_MGMT_IP:5000/v3/ \
