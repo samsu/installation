@@ -410,8 +410,8 @@ function _memcached() {
 
 function keystone() {
     # install keystone
-    yum install -y openstack-keystone
-    _memcached
+    yum install -y openstack-keystone httpd mod_wsgi
+    #_memcached
     _keystone_configure
 
 }

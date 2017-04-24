@@ -2,14 +2,12 @@ function _keystone_configure() {
     crudini --set $KEYSTONE_CONF DEFAULT admin_token $ADMIN_TOKEN
     crudini --set $KEYSTONE_CONF DEFAULT debug True
     crudini --set $KEYSTONE_CONF database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$CTRL_MGMT_IP/keystone
-    #crudini --set $KEYSTONE_CONF token provider keystone.token.providers.uuid.Provider
-    #crudini --set $KEYSTONE_CONF token driver keystone.token.persistence.backends.sql.Token
-    #crudini --set $KEYSTONE_CONF revoke driver keystone.contrib.revoke.backends.sql.Revoke
     crudini --set $KEYSTONE_CONF token provider fernet
-    crudini --set $KEYSTONE_CONF token driver memcache
+    #crudini --set $KEYSTONE_CONF token driver memcache
 
     keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
-    keystone-manage pki_setup --keystone-user keystone --keystone-group keystone
+    keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+    #keystone-manage pki_setup --keystone-user keystone --keystone-group keystone
 
     mkdir -p /etc/keystone/fernet-keys
     chown -R keystone:keystone /etc/keystone
@@ -18,12 +16,23 @@ function _keystone_configure() {
 
     su -s /bin/sh -c "keystone-manage db_sync" keystone
 
-    systemctl enable openstack-keystone.service
-    systemctl restart openstack-keystone.service
+    keystone-manage bootstrap --bootstrap-password $ADMIN_TOKEN \
+      --bootstrap-admin-url http://$CTRL_MGMT_IP:35357/v3/ \
+      --bootstrap-internal-url http://$CTRL_MGMT_IP:5000/v3/ \
+      --bootstrap-public-url http://$CTRL_MGMT_IP:5000/v3/ \
+      --bootstrap-region-id RegionOne
 
-    (crontab -l -u keystone 2>&1 | grep -q token_flush) || \
-      echo '@hourly /usr/bin/keystone-manage token_flush >/var/log/keystone/keystone-tokenflush.log 2>&1' \
-      >> /var/spool/cron/keystone
+    # configure apache http server
+    sed -i "s#^ServerName www.example.com:80#ServerName 127.0.0.1#g" /etc/httpd/conf/httpd.conf
+    ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
+    systemctl enable httpd.service
+    systemctl restart httpd.service
+    #systemctl enable openstack-keystone.service
+    #systemctl restart openstack-keystone.service
+
+    #(crontab -l -u keystone 2>&1 | grep -q token_flush) || \
+    #  echo '@hourly /usr/bin/keystone-manage token_flush >/var/log/keystone/keystone-tokenflush.log 2>&1' \
+    #  >> /var/spool/cron/keystone
 
 
     export OS_TOKEN=$ADMIN_TOKEN
