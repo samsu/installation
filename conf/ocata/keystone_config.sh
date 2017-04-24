@@ -12,7 +12,7 @@ function _keystone_configure() {
     mkdir -p /etc/keystone/fernet-keys
     chown -R keystone:keystone /etc/keystone
     chown -R keystone:keystone /var/log/keystone
-    chmod -R o-rwx /etc/keystone/ssl
+    #chmod -R o-rwx /etc/keystone/ssl
 
     su -s /bin/sh -c "keystone-manage db_sync" keystone
 
@@ -27,19 +27,14 @@ function _keystone_configure() {
     [[ -e /etc/httpd/conf.d/wsgi-keystone.conf ]] || ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
     systemctl enable httpd.service
     systemctl restart httpd.service
-    #systemctl enable openstack-keystone.service
-    #systemctl restart openstack-keystone.service
-
-    #(crontab -l -u keystone 2>&1 | grep -q token_flush) || \
-    #  echo '@hourly /usr/bin/keystone-manage token_flush >/var/log/keystone/keystone-tokenflush.log 2>&1' \
-    #  >> /var/spool/cron/keystone
-
 
     export OS_TOKEN=$ADMIN_TOKEN
     export OS_URL=http://$CTRL_MGMT_IP:35357/v3
     export OS_IDENTITY_API_VERSION=3
-
-    openstack domain show default || openstack domain create --description "Default Domain" default
+    if [[ -n OS_AUTH_URL ]]; then
+        unset OS_AUTH_URL
+    fi
+    #openstack domain show default || openstack domain create --description "Default Domain" default
     openstack project show $KEYSTONE_T_NAME_ADMIN || openstack project create --domain default --description "Admin Project" $KEYSTONE_T_NAME_ADMIN
     openstack user show $KEYSTONE_U_ADMIN || openstack user create --domain default --password $KEYSTONE_U_ADMIN_PWD $KEYSTONE_U_ADMIN
     openstack role show $KEYSTONE_R_NAME_ADMIN || openstack role create $KEYSTONE_R_NAME_ADMIN
