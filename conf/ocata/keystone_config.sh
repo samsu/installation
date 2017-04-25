@@ -44,6 +44,7 @@ function _keystone_configure() {
     openstack project show $KEYSTONE_T_NAME_SERVICE || openstack project create --domain default --description "Service Project" $KEYSTONE_T_NAME_SERVICE
 
     # unset OS_TOKEN OS_URL
+
     # sed -i 's/sizelimit url_normalize request_id build_auth_context token_auth admin_token_auth json_body ec2_extension user_crud_extension public_service/sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension user_crud_extension public_service/g' /etc/keystone/keystone-paste.ini
     # sed -i 's/sizelimit url_normalize request_id build_auth_context token_auth admin_token_auth json_body ec2_extension s3_extension crud_extension admin_service/sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension s3_extension crud_extension admin_service/g' /etc/keystone/keystone-paste.ini
     # sed -i 's/sizelimit url_normalize request_id build_auth_context token_auth admin_token_auth json_body ec2_extension_v3 s3_extension simple_cert_extension revoke_extension federation_extension oauth1_extension endpoint_filter_extension service_v3/sizelimit url_normalize request_id build_auth_context token_auth json_body ec2_extension_v3 s3_extension simple_cert_extension revoke_extension federation_extension oauth1_extension endpoint_filter_extension service_v3/g' /etc/keystone/keystone-paste.ini
@@ -105,6 +106,16 @@ catalog.RegionOne.volumev2.adminURL = http://localhost:8776/v2/$(tenant_id)s
 catalog.RegionOne.volumev2.internalURL = http://localhost:8776/v2/$(tenant_id)s
 catalog.RegionOne.volumev2.name = Volume Service
 EOF
+
+    # disable the temporary authentication token mechanism
+    _sections="pipeline:public_api pipeline:admin_api pipeline:api_v3"
+    for section in $_sections; do
+        cur_val=$(crudini --get /etc/keystone/keystone-paste.ini $section pipeline)
+        if [[ $cur_val == *"admin_token_auth"* ]]; then
+            new_val=${cur_val/admin_token_auth/}
+            crudini --set /etc/keystone/keystone-paste.ini $section pipeline $new_val
+        fi
+    done
 
     export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
 }
