@@ -34,7 +34,7 @@ function _keystone_configure() {
     #if [[ -n $OS_AUTH_URL ]]; then
     #    unset OS_AUTH_URL
     #fi
-    set |grep OS_
+    #set |grep OS_
     openstack domain show default || openstack domain create --description "Default Domain" default
     #openstack project show $KEYSTONE_T_NAME_ADMIN || openstack project create --domain default --description "Admin Project" $KEYSTONE_T_NAME_ADMIN
     #openstack user show $KEYSTONE_U_ADMIN || openstack user create --domain default --password $KEYSTONE_U_ADMIN_PWD $KEYSTONE_U_ADMIN
@@ -51,14 +51,13 @@ function _keystone_configure() {
     for service in $SERVICES; do
         openstack endpoint list --service $service 2>/dev/null
         if [ $? -ne 0 ]; then
-            #if [ $service == 'keystone' ] ; then
-            #    openstack service create --name keystone --description "OpenStack Identity v3" identity
-            #    openstack endpoint create --region $REGION identity public http://$CTRL_MGMT_IP:5000/v3
-            #    openstack endpoint create --region $REGION identity internal http://$CTRL_MGMT_IP:5000/v3
-            #    openstack endpoint create --region $REGION identity admin http://$CTRL_MGMT_IP:35357/v3
+            if [ $service == 'keystone' ] ; then
+                openstack service create --name keystone --description "OpenStack Identity v3" identity
+                openstack endpoint create --region $REGION identity public http://$CTRL_MGMT_IP:5000/v3
+                openstack endpoint create --region $REGION identity internal http://$CTRL_MGMT_IP:5000/v3
+                openstack endpoint create --region $REGION identity admin http://$CTRL_MGMT_IP:35357/v3
 
-            #elif
-            if [ $service == 'glance' ] ; then
+            elif [ $service == 'glance' ] ; then
                 openstack service create --name glance --description "OpenStack Image service" image
                 openstack endpoint create --region $REGION image public http://$CTRL_MGMT_IP:9292
                 openstack endpoint create --region $REGION image internal http://$CTRL_MGMT_IP:9292
