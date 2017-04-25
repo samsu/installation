@@ -2,21 +2,23 @@
 
 function _nova_configure() {
     if [ -e "$NOVA_CONF" ]; then
+        crudini --set $NOVA_CONF DEFAULT enabled_apis "osapi_compute,metadata"
         crudini --set $NOVA_CONF api_database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova_api
         crudini --set $NOVA_CONF database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
-        crudini --set $NOVA_CONF DEFAULT rpc_backend rabbit
-        crudini --set $NOVA_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
-        crudini --set $NOVA_CONF DEFAULT rabbit_password $RABBIT_PASS
-        crudini --set $NOVA_CONF DEFAULT auth_strategy keystone
+        crudini --set $NOVA_CONF DEFAULT transport_url rabbit://$RABBIT_USER:$RABBIT_PASS@$CTRL_MGMT_IP
+        #crudini --set $NOVA_CONF DEFAULT rpc_backend rabbit
+        #crudini --set $NOVA_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
+        #crudini --set $NOVA_CONF DEFAULT rabbit_password $RABBIT_PASS
         crudini --set $NOVA_CONF DEFAULT use_neutron True
         crudini --set $NOVA_CONF DEFAULT linuxnet_interface_driver nova.network.linux_net.LinuxOVSInterfaceDriver
         crudini --set $NOVA_CONF DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
         crudini --set $NOVA_CONF DEFAULT security_group_api neutron
         crudini --set $NOVA_CONF DEFAULT my_ip $MGMT_IP
-        crudini --set $NOVA_CONF DEFAULT vnc_enabled True
-        crudini --set $NOVA_CONF DEFAULT vncserver_listen 0.0.0.0
-        crudini --set $NOVA_CONF DEFAULT vncserver_proxyclient_address $MGMT_IP
-        crudini --set $NOVA_CONF DEFAULT novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
+        crudini --set $NOVA_CONF vnc vnc_enabled True
+        crudini --set $NOVA_CONF vnc vncserver_listen 0.0.0.0
+        crudini --set $NOVA_CONF vnc vncserver_proxyclient_address $MGMT_IP
+        crudini --set $NOVA_CONF vnc novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
+
         if [[ ${CONFIG_DRIVE^^} == 'TRUE' ]]; then
             crudini --set $NOVA_CONF DEFAULT force_config_drive True
         else
@@ -24,6 +26,8 @@ function _nova_configure() {
         fi
 
         crudini --set $NOVA_CONF DEFAULT debug True
+
+        crudini --set $NOVA_CONF api auth_strategy keystone
 
         crudini --set $NOVA_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
         crudini --set $NOVA_CONF keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
@@ -36,7 +40,19 @@ function _nova_configure() {
         crudini --set $NOVA_CONF keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
 
 
-        crudini --set $NOVA_CONF glance host $CTRL_MGMT_IP
+        crudini --set $NOVA_CONF glance api_servers http://$CTRL_MGMT_IP:9292
+
+        crudini --set $NOVA_CONF oslo_concurrency lock_path /var/lib/nova/tmp
+
+        crudini --set $NOVA_CONF placement os_region_name $REGION
+        crudini --set $NOVA_CONF placement project_domain_name default
+        crudini --set $NOVA_CONF placement project_name $KEYSTONE_T_NAME_SERVICE
+        crudini --set $NOVA_CONF placement auth_type password
+        #crudini --set $NOVA_CONF placement auth_uri http://$CTRL_MGMT_IP:5000
+        crudini --set $NOVA_CONF placement auth_url http://$CTRL_MGMT_IP:35357/v3
+        crudini --set $NOVA_CONF placement user_domain_name default
+        crudini --set $NOVA_CONF placement username $KEYSTONE_U_PLACEMENT
+        crudini --set $NOVA_CONF placement password $KEYSTONE_U_PWD_PLACEMENT
 
         egrep -wo 'vmx|svm' /proc/cpuinfo > /dev/null 2>&1
         if [ $? -eq 0 ]; then
@@ -63,6 +79,7 @@ function _nova_configure() {
         if [ ! -z $1 ] && [[ 'nova_ctrl' =~ "$1" ]]; then
             su -s /bin/sh -c "nova-manage api_db sync" nova
             su -s /bin/sh -c "nova-manage db sync" nova
+            su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
         fi
     fi
 }

@@ -24,7 +24,7 @@ export NTPSRV=${NTPSRV:-$CTRL_MGMT_IP}
 export MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
 export RABBIT_USER=${RABBIT_USER:-guest}
 export RABBIT_PASS=${RABBIT_PASS:-$RABBIT_USER}
-export SERVICES=${SERVICES:-"nova keystone glance neutron cinder"}
+export SERVICES=${SERVICES:-"nova placement keystone glance neutron cinder"}
 export ADMIN_TOKEN=${ADMIN_TOKEN:-abc012345678909876543210cba}
 export METADATA_SECRET=metadata_shared_secret
 
@@ -397,7 +397,7 @@ function mq() {
     systemctl enable rabbitmq-server.service
     systemctl restart rabbitmq-server.service
 
-    rabbitmqctl change_password guest $RABBIT_PASS
+    rabbitmqctl change_password $RABBIT_USER $RABBIT_PASS
 }
 
 
@@ -466,15 +466,16 @@ function glance() {
 
 function nova_ctrl() {
     ## nova controller
-    yum install -y openstack-nova-api openstack-nova-cert openstack-nova-conductor \
-      openstack-nova-console openstack-nova-novncproxy openstack-nova-scheduler
+    yum install -y openstack-nova-api openstack-nova-conductor \
+                   openstack-nova-console openstack-nova-novncproxy \
+                   openstack-nova-scheduler openstack-nova-placement-api
 
     _nova_configure nova_ctrl
 
-    systemctl enable openstack-nova-api.service openstack-nova-cert.service \
+    systemctl enable openstack-nova-api.service \
       openstack-nova-consoleauth.service openstack-nova-scheduler.service \
       openstack-nova-conductor.service openstack-nova-novncproxy.service
-    systemctl restart openstack-nova-api.service openstack-nova-cert.service \
+    systemctl restart openstack-nova-api.service \
       openstack-nova-consoleauth.service openstack-nova-scheduler.service \
       openstack-nova-conductor.service openstack-nova-novncproxy.service
 

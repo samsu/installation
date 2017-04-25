@@ -66,9 +66,15 @@ function _keystone_configure() {
 
             elif  [ $service == 'nova' ] ; then
                 openstack service create --name nova --description "OpenStack Compute" compute
-                openstack endpoint create --region $REGION compute public http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
-                openstack endpoint create --region $REGION compute internal http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
-                openstack endpoint create --region $REGION compute admin http://$CTRL_MGMT_IP:8774/v2/%\(tenant_id\)s
+                openstack endpoint create --region $REGION compute public http://$CTRL_MGMT_IP:8774/v2.1
+                openstack endpoint create --region $REGION compute internal http://$CTRL_MGMT_IP:8774/v2.1
+                openstack endpoint create --region $REGION compute admin http://$CTRL_MGMT_IP:8774/v2.1
+
+            elif  [ $service == 'placement' ] ; then
+                openstack service create --name placement --description "Placement API" placement
+                openstack endpoint create --region $REGION placement public http://$CTRL_MGMT_IP/placement
+                openstack endpoint create --region $REGION placement internal http://$CTRL_MGMT_IP/placement
+                openstack endpoint create --region $REGION placement admin http://$CTRL_MGMT_IP/placement
 
             elif  [ $service == 'neutron' ] ; then
                 openstack service create --name neutron --description "OpenStack Networking" network
