@@ -113,7 +113,7 @@ EOF
         cur_val=$(crudini --get /etc/keystone/keystone-paste.ini $section pipeline)
         if [[ $cur_val == *"admin_token_auth"* ]]; then
             new_val=${cur_val/admin_token_auth/}
-            crudini --set /etc/keystone/keystone-paste.ini $section pipeline $new_val
+            crudini --set /etc/keystone/keystone-paste.ini $section pipeline "$new_val"
         fi
     done
 
