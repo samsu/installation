@@ -118,4 +118,10 @@ EOF
     done
 
     export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
+
+    # test the admin user, request an authentication token
+    openstack --os-auth-url http://$CTRL_MGMT_IP:35357/v3 \
+        --os-project-domain-name default --os-user-domain-name default \
+        --os-project-name $KEYSTONE_T_NAME_ADMIN \
+        --os-username $KEYSTONE_U_ADMIN token issue
 }
