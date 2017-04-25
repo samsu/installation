@@ -291,7 +291,7 @@ function service_check() {
 # $1 is the service name, e.g. database
 # $2 is the listening port when the service was running, e.g. 3306
 # if the service is running return 0 else return 1
-    netstat -anp|grep $2 > /dev/nul
+    netstat -anp|grep ":$2" > /dev/nul
     if [ $? -eq 0 ]; then
         echo "Skip $1 installation, because a $1 service is running."
         return 0
@@ -402,8 +402,9 @@ function mq() {
 
 
 function _memcached() {
+    service_check _memcached 11211 && return
     yum install -y memcached
-    sed -i.bak "s#OPTIONS=\"\"#OPTIONS=\"-l $MGMT_IP\"#g" /etc/sysconfig/memcached
+    crudini --set /etc/sysconfig/memcached '' OPTIONS "\"-l $MGMT_IP\""
     systemctl restart memcached
 }
 
@@ -420,6 +421,7 @@ function keystone() {
 function glance() {
     ## glance
     yum install -y openstack-glance
+    _memcached
 
     if [ -z "$KEYSTONE_T_ID_SERVICE" ]; then
         export KEYSTONE_T_ID_SERVICE=$(openstack project show service | grep '| id' | awk '{print $4}')
@@ -432,7 +434,7 @@ function glance() {
     systemctl enable openstack-glance-api.service openstack-glance-registry.service
     systemctl restart openstack-glance-api.service openstack-glance-registry.service
 
-    [ -e ~/openrc ] && source ~/openrc
+    [[ -e ~/openrc ]] && source ~/openrc
     openstack image show $IMAGE_NAME >/dev/null 2>&1
     if [ $? -ne 0 ]; then
         if [ ! -e /tmp/images/$IMAGE_FILE ]; then
