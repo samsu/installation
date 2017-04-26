@@ -1,3 +1,14 @@
+function _keystone_add_user_role() {
+    service=$1
+    eval SERVICE_U=\$$(echo KEYSTONE_U_${service^^})
+    eval SERVICE_U_PWD=\$$(echo KEYSTONE_U_PWD_${service^^})
+    openstack user show $service 2>/dev/null
+    if [ $? -ne 0 ]; then
+        openstack user create --domain default --password $SERVICE_U_PWD $SERVICE_U
+        openstack role add --project $KEYSTONE_T_NAME_SERVICE --user $SERVICE_U $KEYSTONE_R_NAME_ADMIN
+    fi
+}
+
 function _keystone_configure() {
     crudini --set $KEYSTONE_CONF DEFAULT admin_token $ADMIN_TOKEN
     crudini --set $KEYSTONE_CONF DEFAULT debug True
@@ -70,7 +81,6 @@ function _keystone_configure() {
                 openstack endpoint create --region $REGION compute internal http://$CTRL_MGMT_IP:8774/v2.1
                 openstack endpoint create --region $REGION compute admin http://$CTRL_MGMT_IP:8774/v2.1
 
-            elif  [ $service == 'placement' ] ; then
                 openstack service create --name placement --description "Placement API" placement
                 openstack endpoint create --region $REGION placement public http://$CTRL_MGMT_IP/placement
                 openstack endpoint create --region $REGION placement internal http://$CTRL_MGMT_IP/placement
@@ -95,13 +105,8 @@ function _keystone_configure() {
             fi
         fi
         if [ $service != 'keystone' ] ; then
-            eval SERVICE_U=\$$(echo KEYSTONE_U_${service^^})
-            eval SERVICE_U_PWD=\$$(echo KEYSTONE_U_PWD_${service^^})
-            openstack user show $service 2>/dev/null
-            if [ $? -ne 0 ]; then
-                openstack user create --domain default --password $SERVICE_U_PWD $SERVICE_U
-                openstack role add --project $KEYSTONE_T_NAME_SERVICE --user $SERVICE_U $KEYSTONE_R_NAME_ADMIN
-            fi
+            _keystone_add_user_role $service
+            [ $service == 'nova' ] && _keystone_add_user_role placement
         fi
     done
 

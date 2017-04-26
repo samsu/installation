@@ -24,7 +24,7 @@ export NTPSRV=${NTPSRV:-$CTRL_MGMT_IP}
 export MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
 export RABBIT_USER=${RABBIT_USER:-guest}
 export RABBIT_PASS=${RABBIT_PASS:-$RABBIT_USER}
-export SERVICES=${SERVICES:-"nova placement keystone glance neutron cinder"}
+export SERVICES=${SERVICES:-"nova keystone glance neutron cinder"}
 export ADMIN_TOKEN=${ADMIN_TOKEN:-abc012345678909876543210cba}
 export METADATA_SECRET=metadata_shared_secret
 
