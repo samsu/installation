@@ -78,8 +78,8 @@ function _nova_configure() {
 
         if [ ! -z $1 ] && [[ 'nova_ctrl' =~ "$1" ]]; then
             su -s /bin/sh -c "nova-manage api_db sync" nova
-            su -s /bin/sh -c "nova-manage db sync" nova
             su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+            su -s /bin/sh -c "nova-manage db sync" nova
         fi
     fi
 }
