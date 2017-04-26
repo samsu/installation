@@ -556,8 +556,9 @@ function cinder_ctrl() {
 
 
 function dashboard() {
-    yum install -y openstack-dashboard memcached
+    yum install -y openstack-dashboard
 
+    _memcached
     _horizon_configure
 
     systemctl enable httpd.service memcached.service
