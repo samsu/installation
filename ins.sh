@@ -25,6 +25,7 @@ export MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
 export RABBIT_USER=${RABBIT_USER:-guest}
 export RABBIT_PASS=${RABBIT_PASS:-$RABBIT_USER}
 export SERVICES=${SERVICES:-"nova keystone glance neutron cinder"}
+export SERVICES_NODB=${SERVICES_NODB:-"placement"}
 export ADMIN_TOKEN=${ADMIN_TOKEN:-abc012345678909876543210cba}
 export METADATA_SECRET=metadata_shared_secret
 
@@ -269,6 +270,9 @@ function _base() {
     for service in $SERVICES; do
         eval DB_USER_${service^^}=$service
         eval DB_PWD_${service^^}=$service
+     done
+
+     for service in $SERVICES $SERVICES_NODB; do
         eval KEYSTONE_U_${service^^}=$service
         eval KEYSTONE_U_PWD_${service^^}=$service
     done
