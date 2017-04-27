@@ -7,8 +7,8 @@ head of the script according to your setup.
 options:
     -h  this help
     -v  assign an openstack version to be installed, currently supported
-        Openstack version are: ${SUPPORTED_OPENSTACK_RELEASE[@]}
-        the default openstack version is '${SUPPORTED_OPENSTACK_RELEASE[-1]}'
+        Openstack version are: "${SUPPORTED_OPENSTACK_RELEASE[@]}"
+        the default openstack version is "${SUPPORTED_OPENSTACK_RELEASE[-1]}"
 
 rolenames:
     The rolenames could be any one or combo of the follow role set.
