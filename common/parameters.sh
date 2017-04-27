@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-[[ -n $TOP_DIR ]] || TOP_DIR=$(cd $(dirname "$0") && pwd)
-
+[[ -n $TOP_DIR ]] || TOP_DIR="$(cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"/.. && pwd)"
 source "$TOP_DIR/local.conf"
 
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
