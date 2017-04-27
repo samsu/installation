@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
+
+LTOP_DIR=$(cd $(dirname "$0") && pwd)
+TOP_DIR=${TOP_DIR:-$LTOP_DIR}
+
 source "$TOP_DIR/local.conf"
+
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
 export INTERFACE_EXT=${INTERFACE_EXT:-eth2}
