@@ -55,7 +55,7 @@ function loadvars() {
 }
 
 function _help() {
-    usage=$(< $TOP_DIR/docs/help.txt)
+    eval usage="$(< $TOP_DIR/docs/help.txt)"
 
     if [ "$#" -eq 0 ]; then
         echo "$usage"
