@@ -37,7 +37,7 @@ function _keystone_configure() {
     sed -i "s#^ServerName www.example.com:80#ServerName 127.0.0.1#g" /etc/httpd/conf/httpd.conf
     [[ -e /etc/httpd/conf.d/wsgi-keystone.conf ]] || ln -s /usr/share/keystone/wsgi-keystone.conf /etc/httpd/conf.d/
     systemctl enable httpd.service
-    systemctl restart httpd.service
+    systemctl restart httpd.service || exit 11
 
     #export OS_TOKEN=$ADMIN_TOKEN
     #export OS_URL=http://$CTRL_MGMT_IP:35357/v3
