@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-
-LTOP_DIR=$(cd $(dirname "$0") && pwd)
-TOP_DIR=${TOP_DIR:-$LTOP_DIR}
+[[ -n $TOP_DIR ]] || TOP_DIR=$(cd $(dirname "$0") && pwd)
 
 source "$TOP_DIR/local.conf"
 
