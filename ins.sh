@@ -406,16 +406,25 @@ function mq() {
 
 
 function _memcached() {
-    service_check _memcached 11211 && return
+    service_check memcached 11211 && return
     yum install -y memcached
     crudini --set /etc/sysconfig/memcached '' OPTIONS "\"-l $MGMT_IP\""
     systemctl restart memcached
 }
 
+function _httpd() {
+    service_check httpd 80 && return
+    yum install -y httpd
+    sed -i "s#^ServerName www.example.com:80#ServerName 127.0.0.1#g" /etc/httpd/conf/httpd.conf
+    systemctl enable httpd.service
+    systemctl restart httpd.service
+}
 
 function keystone() {
     # install keystone
-    yum install -y openstack-keystone httpd mod_wsgi
+    yum install -y openstack-keystone mod_wsgi
+
+    _httpd
     #_memcached
     _keystone_configure
 
@@ -558,6 +567,8 @@ function cinder_ctrl() {
 function dashboard() {
     yum install -y openstack-dashboard
 
+    # need to install httpd first
+    _httpd
     _memcached
     _horizon_configure
 
