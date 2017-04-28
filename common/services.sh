@@ -242,7 +242,8 @@ function _memcached() {
 
 
 function _httpd() {
-    service_check httpd 80 || yum install -y httpd
+    service_check httpd 80 && return
+    yum install -y httpd
     sed -i "s#^ServerName www.example.com:80#ServerName 127.0.0.1#g" /etc/httpd/conf/httpd.conf
     systemctl enable httpd.service
     systemctl restart httpd.service
