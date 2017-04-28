@@ -1,4 +1,5 @@
-./ins.h [-h] [-v openstack_releasename] rolenames
+Usage:
+    ./ins.h [-h] [-v openstack_releasename] rolenames
 
 This script help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
@@ -83,4 +84,6 @@ rolenames:
          1. prepare your fortigate (if have)
          2. Install controller
          3. Install others (compute/network)
+
+--- END ---
 
