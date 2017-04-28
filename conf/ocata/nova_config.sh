@@ -54,6 +54,22 @@ function _nova_configure() {
         crudini --set $NOVA_CONF placement username $KEYSTONE_U_PLACEMENT
         crudini --set $NOVA_CONF placement password $KEYSTONE_U_PWD_PLACEMENT
 
+        # Need to enable access to the Placement API by adding the following
+        # configuration to /etc/httpd/conf.d/00-nova-placement-api.conf
+        # due to a packaging bug.
+        grep 'Directory /usr/bin' /etc/httpd/conf.d/00-nova-placement-api.conf || \
+        cat >> /etc/httpd/conf.d/00-nova-placement-api.conf << EOF
+<Directory /usr/bin>
+   <IfVersion >= 2.4>
+      Require all granted
+   </IfVersion>
+   <IfVersion < 2.4>
+      Order allow,deny
+      Allow from all
+   </IfVersion>
+</Directory>
+EOF
+
         egrep -wo 'vmx|svm' /proc/cpuinfo > /dev/null 2>&1
         if [ $? -eq 0 ]; then
             crudini --set $NOVA_CONF libvirt virt_type kvm
