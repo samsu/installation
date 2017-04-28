@@ -43,8 +43,8 @@ rolenames:
 
         # Install Openstack with fortinet plugins
         a) Before run the script, a fortigate need to be initialized properly.
-           1) license activated
-           2) enabled multi-vdom
+           1) The license activated
+           2) Enabled multi-vdom on the fortigate
            3) At least there are 3 ports in the fortigate: a port for management
            need to have a ip address, a port for openstack tenant network and
            a port for openstack external network.
