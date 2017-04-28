@@ -118,10 +118,12 @@ function _neutron_configure() {
             crudini --set $NEUTRON_CONF DEFAULT allow_overlapping_ips True
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_status_changes True
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_data_changes True
+            crudini --set $NEUTRON_CONF DEFAULT transport_url "rabbit://$RABBIT_USER:$RABBIT_PASS@$CTRL_MGMT_IP"
+            #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_host $CTRL_MGMT_IP
+            #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_userid guest
+            #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
 
-            crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_host $CTRL_MGMT_IP
-            crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_userid guest
-            crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
+            crudini --set $NEUTRON_CONF oslo_concurrency lock_path /var/lib/neutron/tmp
 
             crudini --set $NEUTRON_CONF nova auth_url http://$CTRL_MGMT_IP:35357
             crudini --set $NEUTRON_CONF nova auth_type password
@@ -141,7 +143,7 @@ function _neutron_configure() {
 
             crudini --set $NEUTRON_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000
             crudini --set $NEUTRON_CONF keystone_authtoken auth_url http://$CTRL_MGMT_IP:35357
-            crudini --set $NEUTRON_CONF keystone_authtoken auth_plugin password
+            crudini --set $NEUTRON_CONF keystone_authtoken auth_type password
             crudini --set $NEUTRON_CONF keystone_authtoken project_domain_name default
             crudini --set $NEUTRON_CONF keystone_authtoken user_domain_name default
             crudini --set $NEUTRON_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE

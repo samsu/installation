@@ -79,7 +79,7 @@ EOF
 
         crudini --set $NOVA_CONF neutron url http://$CTRL_MGMT_IP:9696
         crudini --set $NOVA_CONF neutron auth_url http://$CTRL_MGMT_IP:35357
-        crudini --set $NOVA_CONF neutron auth_plugin password
+        crudini --set $NOVA_CONF neutron auth_type password
         crudini --set $NOVA_CONF neutron project_domain_name default
         crudini --set $NOVA_CONF neutron user_domain_name default
         crudini --set $NOVA_CONF neutron region_name $REGION
