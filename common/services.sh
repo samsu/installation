@@ -15,6 +15,7 @@ function _repo_epel() {
     eval "yum install -y epel-release$_PARAMS"
 }
 
+
 function _repo() {
     yum clean metadata
     yum update -y
@@ -65,6 +66,7 @@ function _ntp() {
     systemctl restart ntpd.service
 }
 
+
 function _base() {
     trap '_ERRTRAP $LINENO $?' ERR
 
@@ -114,6 +116,7 @@ EOF
     source ~/openrc
 }
 
+
 # check service existence before installing it.
 function service_check() {
 # $1 is the service name, e.g. database
@@ -128,6 +131,7 @@ function service_check() {
         return 1
     fi
 }
+
 
 function database() {
     service_check database 3306 && return
@@ -227,6 +231,7 @@ function mq() {
     rabbitmqctl change_password $RABBIT_USER $RABBIT_PASS
 }
 
+
 function _memcached() {
     service_check memcached 11211 && return
     yum install -y memcached
@@ -235,12 +240,14 @@ function _memcached() {
     systemctl restart memcached
 }
 
+
 function _httpd() {
     service_check httpd 80 || yum install -y httpd
     sed -i "s#^ServerName www.example.com:80#ServerName 127.0.0.1#g" /etc/httpd/conf/httpd.conf
     systemctl enable httpd.service
     systemctl restart httpd.service
 }
+
 
 function keystone() {
     # install keystone
