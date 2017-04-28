@@ -55,10 +55,14 @@ function loadvars() {
 }
 
 function _help() {
-    eval usage=$(echo "$(< $TOP_DIR/docs/help.txt)")
+    usage=$(echo "$(< $TOP_DIR/docs/help.txt)")
 
     if [ "$#" -eq 0 ]; then
-        echo "$usage"
+        SUPPORTED_VER=${SUPPORTED_OPENSTACK_RELEASE[@]}
+        LATEST_VER=${SUPPORTED_OPENSTACK_RELEASE[-1]}
+        echo "$usage" | \
+        sed -r "s#SUPPORTED_OPENSTACK_RELEASE#$SUPPORTED_VER#g" | \
+        sed -r "s#LATEST_OPENSTACK_RELEASE#$LATEST_VER#g"
         exit 6
     fi
     while getopts ':hv:' option; do
