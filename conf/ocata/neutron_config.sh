@@ -91,7 +91,7 @@ please set them and run again.
                 yum install -y openstack-neutron-fwaas
             fi
             ## install networking-fortinet from source instead of from python package
-            pip install git+https://github.com/openstack/networking-fortinet
+            pip install git+https://github.com/openstack/networking-fortinet@stable/$INS_OPENSTACK_RELEASE
 
             if [ -e $NEUTRON_CONF ]; then
                 crudini --set $NEUTRON_CONF DEFAULT service_plugins $SERVICE_PLUGINS
