@@ -93,6 +93,7 @@ EOF
         crudini --set $NOVA_CONF cinder os_region_name $REGION
 
         if [ ! -z $1 ] && [[ 'nova_ctrl' =~ "$1" ]]; then
+            crudini --set $NOVA_CONF scheduler discover_hosts_in_cells_interval 300
             su -s /bin/sh -c "nova-manage api_db sync" nova
             su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
             su -s /bin/sh -c "nova-manage db sync" nova
