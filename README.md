@@ -100,17 +100,18 @@ Examples:
     # Install all openstack stuff(allinone role) in one machine
     ./ins.sh -v mitaka allinone
 
-    # Install two roles(nova controller and neutron controller) in a machine
-    # No specific version(-v) means install the latest supported version.
+    # Install two roles(nova controller and neutron controller), if no
+    # specific version(-v) means install the latest supported version.
     ./ins.sh nova_ctrl neutron_ctrl
     
     # Install Openstack with fortinet plugins
-    a) Before run the script, a fortigate need to be initialized properly.
+    a) Before run the script, a fortigate need to be set up properly:
        1) license activated
        2) enabled multi-vdom
-       3) At least there are 3 ports in the fortigate: a port for management
-       need to have a ip address, a port for openstack tenant network and 
-       a port for openstack external network. 
+       3) At least there are 3 ports in the fortigate: 
+             I) a port for management, need to have a ip address
+             II) a port for openstack tenant network 
+             III) a port for openstack external network. 
     
     b) Customize the local.conf file, the following is an example local.conf
        with enabled fortinet plugins
