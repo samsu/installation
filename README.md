@@ -101,6 +101,7 @@ Examples:
     ./ins.sh -v mitaka allinone
 
     # Install two roles(nova controller and neutron controller) in a machine
+    # No specific version(-v) means install the latest supported version.
     ./ins.sh nova_ctrl neutron_ctrl
     
     # Install Openstack with fortinet plugins
