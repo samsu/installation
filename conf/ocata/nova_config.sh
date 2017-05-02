@@ -39,7 +39,6 @@ function _nova_configure() {
         crudini --set $NOVA_CONF keystone_authtoken password $KEYSTONE_U_PWD_NOVA
         crudini --set $NOVA_CONF keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
 
-
         crudini --set $NOVA_CONF glance api_servers http://$CTRL_MGMT_IP:9292
 
         crudini --set $NOVA_CONF oslo_concurrency lock_path /var/lib/nova/tmp
