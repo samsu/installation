@@ -66,8 +66,8 @@ Options:
 
     -h  this help
     -v  assign an openstack version to be installed, currently supported
-        Openstack version are: liberty, mitaka
-        the default openstack version is 'mitaka'
+        Openstack version are: liberty, mitaka, ocata
+        the default openstack version is 'ocata'
 
 
 Rolenames:
