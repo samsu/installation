@@ -51,7 +51,9 @@ Prerequisites:
 
     4. Execute the script as root
 
-    5. Internet connection is required
+    5. Internet connection is required, because related packages need 
+       to download from internet, make sure the DNS and the network of 
+       hosts have been set properly before run the scripts.
 
 
 Usage:

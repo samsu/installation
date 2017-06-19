@@ -5,11 +5,6 @@ This script help you to install specific openstack roles to the machine,
 before run the script, you need to update the environment variables in the
 head of the script according to your setup.
 
-Prerequisites:
-    1) All nodes should be able to access internet to install related packages,
-       make sure the DNS and the network have been set properly before run
-       the scripts.
-
 options:
     -h  this help
     -v  assign an openstack version to be installed, currently supported
