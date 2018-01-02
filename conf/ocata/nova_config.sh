@@ -5,7 +5,11 @@ function _nova_configure() {
         crudini --set $NOVA_CONF DEFAULT enabled_apis "osapi_compute,metadata"
         crudini --set $NOVA_CONF api_database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova_api
         crudini --set $NOVA_CONF database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
-        crudini --set $NOVA_CONF DEFAULT transport_url rabbit://$RABBIT_USER:$RABBIT_PASS@$CTRL_MGMT_IP
+        if [[ ${RABBIT_HA^^} == 'TRUE' ]]; then
+            crudini --set $NOVA_CONF DEFAULT transport_url rabbit://$RABBIT_LIST
+        else
+            crudini --set $NOVA_CONF DEFAULT transport_url rabbit://$RABBIT_USER:$RABBIT_PASS@$CTRL_MGMT_IP
+        fi
         #crudini --set $NOVA_CONF DEFAULT rpc_backend rabbit
         #crudini --set $NOVA_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
         #crudini --set $NOVA_CONF DEFAULT rabbit_password $RABBIT_PASS
