@@ -110,7 +110,7 @@ function _neutron_configure() {
     # $NEUTRON_CONF configuration
     if [ -z $_NEUTRON_CONFIGED ]; then
         if [ -e "$NEUTRON_CONF" ]; then
-            crudini --set $NEUTRON_CONF DEFAULT debug True
+            crudini --set $NEUTRON_CONF DEFAULT debug $DEBUG
             crudini --set $NEUTRON_CONF DEFAULT rpc_backend rabbit
             crudini --set $NEUTRON_CONF DEFAULT auth_strategy keystone
             crudini --set $NEUTRON_CONF DEFAULT core_plugin ml2
@@ -119,9 +119,11 @@ function _neutron_configure() {
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_status_changes True
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_data_changes True
 
-            crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_host $CTRL_MGMT_IP
-            crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_userid guest
-            crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
+            crudini --set $NEUTRON_CONF DEFAULT rabbit_ha_queues $RABBIT_HA
+            crudini --set $NEUTRON_CONF DEFAULT transport_url "rabbit://$RABBIT_LIST"
+            #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_host $RABBIT_IP
+            #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_userid guest
+            #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
 
             crudini --set $NEUTRON_CONF nova auth_url http://$CTRL_MGMT_IP:35357
             crudini --set $NEUTRON_CONF nova auth_type password
@@ -132,7 +134,7 @@ function _neutron_configure() {
             crudini --set $NEUTRON_CONF nova username $KEYSTONE_U_NOVA
             crudini --set $NEUTRON_CONF nova password $KEYSTONE_U_PWD_NOVA
 
-            crudini --set $NEUTRON_CONF database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$CTRL_MGMT_IP/neutron
+            crudini --set $NEUTRON_CONF database connection mysql://$DB_USER_NEUTRON:$DB_PWD_NEUTRON@$DB_IP/neutron
 
             crudini --del $NEUTRON_CONF keystone_authtoken identity_uri
             crudini --del $NEUTRON_CONF keystone_authtoken admin_tenant_name

@@ -3,6 +3,7 @@
 [[ -n $TOP_DIR ]] || TOP_DIR="$(cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"/.. && pwd)"
 source "$TOP_DIR/local.conf"
 
+export DEBUG=${DEBUG:-False}
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
 export INTERFACE_EXT=${INTERFACE_EXT:-eth2}

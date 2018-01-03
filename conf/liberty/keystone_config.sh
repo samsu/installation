@@ -1,7 +1,7 @@
 function _keystone_configure() {
     crudini --set $KEYSTONE_CONF DEFAULT admin_token $ADMIN_TOKEN
-    crudini --set $KEYSTONE_CONF DEFAULT debug True
-    crudini --set $KEYSTONE_CONF database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$CTRL_MGMT_IP/keystone
+    crudini --set $KEYSTONE_CONF DEFAULT debug $DEBUG
+    crudini --set $KEYSTONE_CONF database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$DB_IP/keystone
     crudini --set $KEYSTONE_CONF token provider keystone.token.providers.uuid.Provider
     crudini --set $KEYSTONE_CONF token driver keystone.token.persistence.backends.sql.Token
     crudini --set $KEYSTONE_CONF revoke driver keystone.contrib.revoke.backends.sql.Revoke

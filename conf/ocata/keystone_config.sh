@@ -11,8 +11,8 @@ function _keystone_add_user_role() {
 
 function _keystone_configure() {
     crudini --set $KEYSTONE_CONF DEFAULT admin_token $ADMIN_TOKEN
-    crudini --set $KEYSTONE_CONF DEFAULT debug True
-    crudini --set $KEYSTONE_CONF database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$CTRL_MGMT_IP/keystone
+    crudini --set $KEYSTONE_CONF DEFAULT debug $DEBUG
+    crudini --set $KEYSTONE_CONF database connection mysql://$DB_USER_KEYSTONE:$DB_PWD_KEYSTONE@$DB_IP/keystone
     crudini --set $KEYSTONE_CONF token provider fernet
     #crudini --set $KEYSTONE_CONF token driver memcache
 

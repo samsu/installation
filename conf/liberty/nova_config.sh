@@ -1,8 +1,8 @@
 function _nova_configure() {
     if [ -e "$NOVA_CONF" ]; then
-        crudini --set $NOVA_CONF database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$CTRL_MGMT_IP/nova
+        crudini --set $NOVA_CONF database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$DB_IP/nova
         crudini --set $NOVA_CONF DEFAULT rpc_backend rabbit
-        crudini --set $NOVA_CONF DEFAULT rabbit_host $CTRL_MGMT_IP
+        crudini --set $NOVA_CONF DEFAULT rabbit_host $RABBIT_IP
         crudini --set $NOVA_CONF DEFAULT rabbit_password $RABBIT_PASS
         crudini --set $NOVA_CONF DEFAULT auth_strategy keystone
         crudini --set $NOVA_CONF DEFAULT network_api_class nova.network.neutronv2.api.API
@@ -19,7 +19,7 @@ function _nova_configure() {
         else
             crudini --set $NOVA_CONF DEFAULT force_config_drive False
         fi
-        crudini --set $NOVA_CONF DEFAULT debug True
+        crudini --set $NOVA_CONF DEFAULT debug $DEBUG
 
         crudini --set $NOVA_CONF keystone_authtoken auth_uri http://$CTRL_MGMT_IP:5000/v3
         crudini --set $NOVA_CONF keystone_authtoken identity_uri http://$CTRL_MGMT_IP:35357
