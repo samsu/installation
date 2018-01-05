@@ -133,20 +133,9 @@ function service_check() {
 }
 
 
-function _repo_maria_db() {
-    cat > /etc/yum.repos.d/MariaDB.repo << EOF
-[mariadb]
-name = MariaDB
-baseurl = http://yum.mariadb.org/10.0-galera/centos\$releasever-amd64/
-gpgkey = https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
-gpgcheck = 1
-EOF
-}
-
 function database() {
     service_check database 3306 && return
     if [[ ${DB_HA^^} == 'TRUE' ]]; then
-        _repo_maria_db
         yum install -y MariaDB-client MariaDB-Galera-server galera
     else
         yum install -y mariadb mariadb-server MySQL-python python-openstackclient
