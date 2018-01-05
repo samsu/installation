@@ -133,11 +133,26 @@ function service_check() {
 }
 
 
+function _repo_maria_db() {
+    cat > /etc/yum/repos.d/MariaDB.repo << EOF
+[mariadb]
+name = MariaDB
+baseurl = http://yum.mariadb.org/version/package
+gpgkey = https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck = 1
+EOF
+}
+
 function database() {
     service_check database 3306 && return
-    yum install -y mariadb mariadb-server MySQL-python python-openstackclient
+    if [[ ${DB_HA^^} == 'TRUE' ]]; then
+        _repo_maria_db
+        yum install -y MariaDB-client MariaDB-Galera-server galera
+    else
+        yum install -y mariadb mariadb-server MySQL-python python-openstackclient
+    fi
     # generate config file
-    cat > /etc/my.cnf << EOF
+cat > ~/my.cnf << EOF
 [mysqld]
 datadir=/var/lib/mysql
 socket=/var/lib/mysql/mysql.sock
@@ -149,10 +164,45 @@ symbolic-links=0
 # instructions in http://fedoraproject.org/wiki/Systemd
 bind-address = $MGMT_IP
 default-storage-engine = innodb
-innodb_file_per_table
+# innodb_file_per_table = 1
 collation-server = utf8_general_ci
 init-connect = 'SET NAMES utf8'
 character-set-server = utf8
+EOF
+
+_start_options=''
+if [[ ${DB_HA^^} == 'TRUE' ]]; then
+cat >> ~/my.cnf << EOF
+user=mysql
+binlog_format=ROW
+innodb_autoinc_lock_mode=2
+innodb_flush_log_at_trx_commit=0
+innodb_buffer_pool_size=122M
+
+wsrep_provider=$DB_WSREP_PROVIDER
+wsrep_provider_options="pc.recovery=TRUE;gcache.size=$DB_CACHE_SIZE"
+wsrep_cluster_name="$DB_CLUSTER_NAME"
+wsrep_cluster_address="gcomm://$DB_CLUSTER_IP_LIST"
+wsrep_sst_method=rsync
+EOF
+    set -- junk "$DB_CLUSTER_IP_LIST"
+    shift
+    OIFS=$IFS
+    IFS=','
+    primary_ip=$1
+    other_ips=$2
+    IFS="$OIFS"
+    if [ -z "$other_ips" ]; then
+        echo "Error: multiply ips required at the option 'DB_CLUSTER_IP_LIST' for database HA."
+        exit 30
+    fi
+    ip address | grep "$primary_ip"
+    if [ $? -eq 0 ]; then
+        _start_options="--wsrep-new-cluster"
+    fi
+fi
+
+cat >> ~/my.cnf << EOF
 
 [mysqld_safe]
 log-error=/var/log/mariadb/mariadb.log
@@ -166,7 +216,7 @@ pid-file=/var/run/mariadb/mariadb.pid
 EOF
 
     systemctl enable mariadb.service
-    systemctl start mariadb.service
+    systemctl start mariadb.service "$_start_options"
 
     (mysqlshow -uroot -p$MYSQL_ROOT_PASSWORD 2>&1) > /dev/nul
 
@@ -215,6 +265,11 @@ expect eof
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
 
+    if [[ ${DB_HA^^} == 'TRUE' ]]; then
+        # show how many nodes in the cluster
+        mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW STATUS LIKE 'wsrep_cluster_size';"
+    fi
+
     _services_db_creation
 }
 
@@ -225,10 +280,46 @@ function mq() {
     yum install -y rabbitmq-server
     sed -i.bak "s#%% {tcp_listeners, \[5672\]},#{tcp_listeners, \[{\"$MGMT_IP\", 5672}\]}#g" /etc/rabbitmq/rabbitmq.config
 
+    if [[ ${RABBIT_HA^^} == 'TRUE' ]]; then
+        if [ ! -z "$ERLANG_COOKIE" ]; then
+            echo "$ERLANG_COOKIE" > /var/lib/rabbitmq/.erlang.cookie
+        else
+            echo "Error: the option ERLANG_COOKIE is empty."
+            exit 20
+        fi
+        chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie
+        chmod 400 /var/lib/rabbitmq/.erlang.cookie
+        rabbitmqctl set_cluster_name openstack
+        rabbitmqctl set_policy ha-all '^(?!amq\.).*' '{"ha-mode": "all"}'
+        RABBIT_LIST=''
+        _first_node=True
+        for node in "${!RABBIT_CLUSTER[@]}"; do
+            node_info=${RABBIT_CLUSTER[$node]}
+            set -- junk "$node_info"
+            shift
+            grep "$node_info" /etc/hosts || echo $$node_info >> /etc/hosts
+            _ip=$1
+            _hostname=$2
+            if [ -z "$RABBIT_LIST" ]; then
+                RABBIT_LIST="$RABBIT_USER:$RABBIT_PASS@$_ip:$RABBIT_PORT"
+            else
+                RABBIT_LIST="$RABBIT_USER:$RABBIT_PASS@$_ip:$RABBIT_PORT,$RABBIT_LIST"
+            fi
+            if [[ "${_first_node^^}" == 'TRUE' ]]; then
+                _first_node="$_hostname"
+            else
+                rabbitmqctl stop_app
+                rabbitmqctl join_cluster --ram "rabbit@$_first_node"
+                rabbitmqctl start_app
+                rabbitmqctl cluster_status | grep "rabbit@$_first_node"
+            fi
+        done
+    fi
+
     systemctl enable rabbitmq-server.service
     systemctl restart rabbitmq-server.service
 
-    rabbitmqctl change_password $RABBIT_USER $RABBIT_PASS
+    rabbitmqctl change_password "$RABBIT_USER" "$RABBIT_PASS"
 }
 
 

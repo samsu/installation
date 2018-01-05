@@ -20,13 +20,33 @@ export NTPSRV=${NTPSRV:-$CTRL_MGMT_IP}
 export DB_IP=${DB_IP:-$CTRL_MGMT_IP}
 export MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
 
-export RABBIT_HA=${RABBIT_HA:-False}
+export DB_HA=${DB_HA:-False}
+# Galera cluster configuration
+export DB_WSREP_PROVIDER=${DB_WSREP_PROVIDER:-"/usr/lib/libgalera_smm.so"}
+export DB_CACHE_SIZE=${DB_CACHE_SIZE:-300M}
+export DB_CLUSTER_NAME=${DB_CLUSTER_NAME:-"db_cluster"}
+export DB_CLUSTER_IP_LIST=${DB_CLUSTER_IP_LIST:-"$DB_IP"}
+
 export RABBIT_IP=${RABBIT_IP:-$CTRL_MGMT_IP}
 export RABBIT_USER=${RABBIT_USER:-guest}
 export RABBIT_PASS=${RABBIT_PASS:-$RABBIT_USER}
 export RABBIT_PORT=${RABBIT_PORT:-5672}
-export RABBIT_LIST=${RABBIT_LIST:-$RABBIT_USER:$RABBIT_PASS@$RABBIT_IP:$RABBIT_PORT}
+#export RABBIT_LIST=${RABBIT_LIST:-$RABBIT_USER:$RABBIT_PASS@$RABBIT_IP:$RABBIT_PORT}
+# rabbitmq ha
+export RABBIT_HA=${RABBIT_HA:-False}
+# the length is 20 letters
+export ERLANG_COOKIE=${ERLANG_COOKIE:-RETATECCEBVIMIRCFTNT}
+declare -p RABBIT_CLUSTER > /dev/null 2>&1
+if [ $? -eq 1 ]; then
+    echo "rabbitmq ha required to define RABBIT_CLUSTER, but it was not defined" && exit 30
+    #declare -a RABBIT_CLUSTER=(
+    #    '10.160.37.51 centos7-1'
+    #    '10.160.37.56 centos7-6'
+    #)
+fi
+export RABBIT_CLUSTER
 
+# openstack components
 export SERVICES=${SERVICES:-"nova keystone glance neutron cinder"}
 export SERVICES_NODB=${SERVICES_NODB:-"placement"}
 export ADMIN_TOKEN=${ADMIN_TOKEN:-abc012345678909876543210cba}
@@ -101,7 +121,6 @@ password: $KEYSTONE_U_ADMIN_PWD
 declare -a SUPPORTED_OPENSTACK_RELEASE=(
     liberty
     mitaka
-    newton
     ocata
 )
 export SUPPORTED_OPENSTACK_RELEASE
