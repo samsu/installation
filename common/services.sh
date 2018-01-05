@@ -136,7 +136,7 @@ function service_check() {
 function database() {
     service_check database 3306 && return
     if [[ ${DB_HA^^} == 'TRUE' ]]; then
-        yum install -y MariaDB-client MariaDB-Galera-server galera
+        yum install -y mariadb-galera-server galera
     else
         yum install -y mariadb mariadb-server MySQL-python python-openstackclient
     fi
