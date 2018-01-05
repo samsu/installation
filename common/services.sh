@@ -281,6 +281,11 @@ function mq() {
     sed -i.bak "s#%% {tcp_listeners, \[5672\]},#{tcp_listeners, \[{\"$MGMT_IP\", 5672}\]}#g" /etc/rabbitmq/rabbitmq.config
 
     if [[ ${RABBIT_HA^^} == 'TRUE' ]]; then
+        declare -p RABBIT_CLUSTER > /dev/null 2>&1
+        if [ $? -eq 1 ]; then
+            echo "rabbitmq ha required to define RABBIT_CLUSTER, but it was not defined" && exit 30
+        fi
+
         if [ ! -z "$ERLANG_COOKIE" ]; then
             echo "$ERLANG_COOKIE" > /var/lib/rabbitmq/.erlang.cookie
         else

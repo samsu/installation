@@ -36,15 +36,15 @@ export RABBIT_PORT=${RABBIT_PORT:-5672}
 export RABBIT_HA=${RABBIT_HA:-False}
 # the length is 20 letters
 export ERLANG_COOKIE=${ERLANG_COOKIE:-RETATECCEBVIMIRCFTNT}
-declare -p RABBIT_CLUSTER > /dev/null 2>&1
-if [ $? -eq 1 ]; then
-    echo "rabbitmq ha required to define RABBIT_CLUSTER, but it was not defined" && exit 30
+#declare -p RABBIT_CLUSTER > /dev/null 2>&1
+#if [ $? -eq 1 ] && [[ ${RABBIT_HA^^} == 'TRUE' ]]; then
+#    echo "rabbitmq ha required to define RABBIT_CLUSTER, but it was not defined" && exit 30
     #declare -a RABBIT_CLUSTER=(
     #    '10.160.37.51 centos7-1'
     #    '10.160.37.56 centos7-6'
     #)
-fi
-export RABBIT_CLUSTER
+#fi
+#export RABBIT_CLUSTER
 
 # openstack components
 export SERVICES=${SERVICES:-"nova keystone glance neutron cinder"}
