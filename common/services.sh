@@ -137,7 +137,7 @@ function _repo_maria_db() {
     cat > /etc/yum.repos.d/MariaDB.repo << EOF
 [mariadb]
 name = MariaDB
-baseurl = http://yum.mariadb.org/version/package
+baseurl = http://yum.mariadb.org/10.0-galera/centos\$releasever-amd64/
 gpgkey = https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
 gpgcheck = 1
 EOF
