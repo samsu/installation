@@ -134,7 +134,7 @@ function service_check() {
 
 
 function _repo_maria_db() {
-    cat > /etc/yum/repos.d/MariaDB.repo << EOF
+    cat > /etc/yum.repos.d/MariaDB.repo << EOF
 [mariadb]
 name = MariaDB
 baseurl = http://yum.mariadb.org/version/package
