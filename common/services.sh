@@ -187,7 +187,7 @@ wsrep_sst_method=rsync
 EOF
     OIFS=$IFS
     IFS=','
-    set -- junk "$DB_CLUSTER_IP_LIST"
+    set -- junk $DB_CLUSTER_IP_LIST
     shift
     primary_ip=$1
     other_ips=$2
