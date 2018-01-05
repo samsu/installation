@@ -185,10 +185,10 @@ wsrep_cluster_name="$DB_CLUSTER_NAME"
 wsrep_cluster_address="gcomm://$DB_CLUSTER_IP_LIST"
 wsrep_sst_method=rsync
 EOF
-    set -- junk "$DB_CLUSTER_IP_LIST"
-    shift
     OIFS=$IFS
     IFS=','
+    set -- junk "$DB_CLUSTER_IP_LIST"
+    shift
     primary_ip=$1
     other_ips=$2
     IFS="$OIFS"
