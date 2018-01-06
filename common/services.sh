@@ -205,7 +205,7 @@ pid-file=/var/run/mariadb/mariadb.pid
 EOF
 
     systemctl enable mariadb.service
-    systemctl start mariadb.service "$_start_options"
+    systemctl start mariadb.service
 
     (mysqlshow -uroot -p$MYSQL_ROOT_PASSWORD 2>&1) > /dev/nul
 
