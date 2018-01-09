@@ -256,10 +256,11 @@ expect eof
         ip address | grep "$primary_ip"
         if [ $? -eq 0 ]; then
             _start_options="--wsrep-new-cluster"
-            mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql --"$_start_options" &
-        else
-            mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql &
         fi
+        mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql "$_start_options" &
+        #else
+        #    mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql &
+        #fi
 
         # check the cluster status, show how many nodes in the cluster
         mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW STATUS LIKE 'wsrep_cluster_size';"
