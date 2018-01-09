@@ -22,10 +22,15 @@ export MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
 
 export DB_HA=${DB_HA:-False}
 # Galera cluster configuration
-export DB_WSREP_PROVIDER=${DB_WSREP_PROVIDER:-"/usr/lib/libgalera_smm.so"}
+
+export DB_HA_CONF=${DB_HA_CONF:-"/etc/my.cnf.d/mariadb-server.cnf"}
+export DB_WSREP_PROVIDER=${DB_WSREP_PROVIDER:-"/usr/lib64/galera/libgalera_smm.so"}
 export DB_CACHE_SIZE=${DB_CACHE_SIZE:-300M}
-export DB_CLUSTER_NAME=${DB_CLUSTER_NAME:-"db_cluster"}
+export DB_CLUSTER_NAME=${DB_CLUSTER_NAME:-"openstack_db"}
 export DB_CLUSTER_IP_LIST=${DB_CLUSTER_IP_LIST:-"$DB_IP"}
+export DB_XTRABACKUP_PASSWORD=${DB_XTRABACKUP_PASSWORD:-"galera"}
+export DB_WSREP_SST_AUTH=${DB_WSREP_SST_AUTH:-"galera:$DB_XTRABACKUP_PASSWORD"}
+export DB_WSREP_SST_METHOD=${DB_WSREP_SST_METHOD:-"xtrabackup-v2"}
 
 export RABBIT_IP=${RABBIT_IP:-$CTRL_MGMT_IP}
 export RABBIT_USER=${RABBIT_USER:-guest}

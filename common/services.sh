@@ -136,7 +136,7 @@ function service_check() {
 function database() {
     service_check database 3306 && return
     if [[ ${DB_HA^^} == 'TRUE' ]]; then
-        yum install -y mariadb-galera-server galera
+        yum install -y mariadb-galera-server galera percona-xtrabackup
     else
         yum install -y mariadb mariadb-server MySQL-python python-openstackclient
     fi
@@ -157,41 +157,7 @@ default-storage-engine = innodb
 collation-server = utf8_general_ci
 init-connect = 'SET NAMES utf8'
 character-set-server = utf8
-EOF
 
-_start_options=''
-if [[ ${DB_HA^^} == 'TRUE' ]]; then
-cat >> ~/my.cnf << EOF
-user=mysql
-binlog_format=ROW
-innodb_autoinc_lock_mode=2
-innodb_flush_log_at_trx_commit=0
-innodb_buffer_pool_size=122M
-
-wsrep_provider=$DB_WSREP_PROVIDER
-wsrep_provider_options="pc.recovery=TRUE;gcache.size=$DB_CACHE_SIZE"
-wsrep_cluster_name="$DB_CLUSTER_NAME"
-wsrep_cluster_address="gcomm://$DB_CLUSTER_IP_LIST"
-wsrep_sst_method=rsync
-EOF
-    OIFS=$IFS
-    IFS=','
-    set -- junk $DB_CLUSTER_IP_LIST
-    shift
-    primary_ip=$1
-    other_ips=$2
-    IFS="$OIFS"
-    if [ -z "$other_ips" ]; then
-        echo "Error: multiply ips required at the option 'DB_CLUSTER_IP_LIST' for database HA."
-        exit 30
-    fi
-    ip address | grep "$primary_ip"
-    if [ $? -eq 0 ]; then
-        _start_options="--wsrep-new-cluster"
-    fi
-fi
-
-cat >> ~/my.cnf << EOF
 
 [mysqld_safe]
 log-error=/var/log/mariadb/mariadb.log
@@ -253,13 +219,55 @@ expect eof
     # Enable root remote access MySQL
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'%' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
     mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL ON *.* TO 'root'@'localhost' IDENTIFIED BY '$MYSQL_ROOT_PASSWORD';"
+    mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "grant all on *.* to 'galera'@'localhost' identified by '$DB_XTRABACKUP_PASSWORD';"
 
+    _start_options=''
     if [[ ${DB_HA^^} == 'TRUE' ]]; then
-        # show how many nodes in the cluster
+        crudini --set $DB_HA_CONF galera wsrep_on ON
+        crudini --set $DB_HA_CONF galera wsrep_provider "$DB_WSREP_PROVIDER"
+        crudini --set $DB_HA_CONF galera wsrep_cluster_address "gcomm://$DB_CLUSTER_IP_LIST"
+        crudini --set $DB_HA_CONF galera binlog_format row
+        crudini --set $DB_HA_CONF galera default_storage_engine InnoDB
+        crudini --set $DB_HA_CONF galera innodb_autoinc_lock_mode 2
+        crudini --set $DB_HA_CONF galera bind-address "$MGMT_IP"
+        crudini --set $DB_HA_CONF galera wsrep_cluster_name "$DB_CLUSTER_NAME"
+        crudini --set $DB_HA_CONF galera wsrep_sst_auth "$DB_WSREP_SST_AUTH"
+        crudini --set $DB_HA_CONF galera wsrep_sst_method "$DB_WSREP_SST_METHOD"
+        crudini --set $DB_HA_CONF galera wsrep_node_address "$MGMT_IP"
+        crudini --set $DB_HA_CONF galera wsrep_node_name $(hostname -s)
+        crudini --set $DB_HA_CONF galera wsrep_slave_threads $(grep -c ^processor /proc/cpuinfo)
+        crudini --set $DB_HA_CONF galera innodb_flush_log_at_trx_commit 0
+
+
+        OIFS=$IFS
+        IFS=','
+        set -- junk $DB_CLUSTER_IP_LIST
+        shift
+        primary_ip=$1
+        other_ips=$2
+        IFS="$OIFS"
+        if [ -z "$other_ips" ]; then
+            echo "Error: multiply ips required at the option 'DB_CLUSTER_IP_LIST' for database HA."
+            exit 30
+        fi
+        systemctl stop mariadb.service
+        mysql_install_db --defaults-file="$DB_HA_CONF" --user=mysql
+
+        ip address | grep "$primary_ip"
+        if [ $? -eq 0 ]; then
+            _start_options="--wsrep-new-cluster"
+            mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql --"$_start_options" &
+        else
+            mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql &
+        fi
+
+        # check the cluster status, show how many nodes in the cluster
         mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW STATUS LIKE 'wsrep_cluster_size';"
     fi
 
-    _services_db_creation
+    if [ ! -z "$_start_options" ] || [[ ${DB_HA^^} == 'FALSE' ]]; then
+        _services_db_creation
+    fi
 }
 
 
