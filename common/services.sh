@@ -136,7 +136,7 @@ function service_check() {
 function database() {
     service_check database 3306 && return
     if [[ ${DB_HA^^} == 'TRUE' ]]; then
-        yum install -y mariadb-galera-server galera percona-xtrabackup
+        yum install -y mariadb-galera-server galera percona-xtrabackup socat
     else
         yum install -y mariadb mariadb-server MySQL-python python-openstackclient
     fi
