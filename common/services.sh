@@ -307,7 +307,7 @@ function mq() {
         _first_node=True
         for node in "${!RABBIT_CLUSTER[@]}"; do
             node_info=${RABBIT_CLUSTER[$node]}
-            set -- junk "$node_info"
+            set -- junk $node_info
             shift
             grep "$node_info" /etc/hosts || echo $$node_info >> /etc/hosts
             _ip=$1
