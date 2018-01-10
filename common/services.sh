@@ -280,6 +280,8 @@ function mq() {
     service_check rabbitmq-server 5672 && return
     ## install rabbitmq
     yum install -y rabbitmq-server
+    systemctl enable rabbitmq-server.service
+
     sed -i.bak "s#%% {tcp_listeners, \[5672\]},#{tcp_listeners, \[{\"$MGMT_IP\", 5672}\]}#g" /etc/rabbitmq/rabbitmq.config
 
     if [[ ${RABBIT_HA^^} == 'TRUE' ]]; then
@@ -296,6 +298,9 @@ function mq() {
         fi
         chown rabbitmq:rabbitmq /var/lib/rabbitmq/.erlang.cookie
         chmod 400 /var/lib/rabbitmq/.erlang.cookie
+
+        systemctl restart rabbitmq-server.service
+
         rabbitmqctl set_cluster_name openstack
         rabbitmqctl set_policy ha-all '^(?!amq\.).*' '{"ha-mode": "all"}'
         RABBIT_LIST=''
@@ -321,10 +326,9 @@ function mq() {
                 rabbitmqctl cluster_status | grep "rabbit@$_first_node"
             fi
         done
+    else
+        systemctl restart rabbitmq-server.service
     fi
-
-    systemctl enable rabbitmq-server.service
-    systemctl restart rabbitmq-server.service
 
     rabbitmqctl change_password "$RABBIT_USER" "$RABBIT_PASS"
 }
