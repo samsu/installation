@@ -33,7 +33,7 @@ function _services_db_creation() {
         eval SERVICE_DB_PWD=\$$(echo DB_PWD_${service^^})
 
         _db_creation $SERVICE_DB_USER $SERVICE_DB_PWD $service
-
+        sleep 2s
         if [[ ${service,,} == 'nova' ]]; then
             _db_creation $SERVICE_DB_USER $SERVICE_DB_PWD nova_api
         fi
