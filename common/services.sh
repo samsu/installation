@@ -329,7 +329,7 @@ function mq() {
     else
         systemctl restart rabbitmq-server.service
     fi
-
+    sleep 5s
     rabbitmqctl change_password "$RABBIT_USER" "$RABBIT_PASS"
 }
 
