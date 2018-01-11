@@ -146,6 +146,7 @@ function _timestamp {
 
 
 function _wait() {
+    set +x
     num=$(echo "$*" | grep -o '[0-9]\+')
     i=0
     while [ "$i" -le "$num" ] ; do
@@ -155,4 +156,5 @@ function _wait() {
         done
         ((i++))
     done
+    set -x
 }

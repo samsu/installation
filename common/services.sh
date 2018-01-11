@@ -239,9 +239,9 @@ expect eof
         crudini --set $DB_HA_CONF galera innodb_flush_log_at_trx_commit 0
 
         DB_CLUSTER_IP_LIST=$(echo $DB_CLUSTER_IP_LIST | grep -o '[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}')
-        read -ra DB_CLUSTER_IP_LIST <<< "$DB_CLUSTER_IP_LIST"
-        primary_ip="${DB_CLUSTER_IP_LIST[0]}"
-        other_ips="${DB_CLUSTER_IP_LIST[1]}"
+        primary_ip=$(echo $DB_CLUSTER_IP_LIST | awk '{print $1}')
+        other_ips=$(echo $DB_CLUSTER_IP_LIST | awk '{print $2}')
+
         if [ -z "$other_ips" ]; then
             echo "Error: multiply ips required at the option 'DB_CLUSTER_IP_LIST' for database HA."
             exit 30
