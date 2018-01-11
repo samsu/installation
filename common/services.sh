@@ -259,9 +259,6 @@ expect eof
         fi
         mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql "$_start_options" &
         sleep 5s
-        #else
-        #    mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql &
-        #fi
 
         # check the cluster status, show how many nodes in the cluster
         if [ -z "$_start_options" ]; then
