@@ -324,12 +324,12 @@ function mq() {
             rabbitmqctl join_cluster --ram "rabbit@$_first_node"
             rabbitmqctl start_app
             rabbitmqctl cluster_status | grep "rabbit@$_first_node"
+            _wait 5s
         fi
 
     else
         systemctl restart rabbitmq-server.service
     fi
-    _wait 5s
     rabbitmqctl change_password "$RABBIT_USER" "$RABBIT_PASS"
 }
 
