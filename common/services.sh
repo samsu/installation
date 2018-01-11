@@ -261,7 +261,7 @@ expect eof
         sleep 5s
 
         # check the cluster status, show how many nodes in the cluster
-        if [ -z "$_start_options" ]; then
+        if [ ! -z "$_start_options" ]; then
             sleep 60s
         fi
         mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW STATUS LIKE 'wsrep_cluster_size';"
