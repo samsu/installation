@@ -135,7 +135,7 @@ function _installation() {
     _base
     for service in "$@"; do
         echo "##### Installing $service ..."
-        $service || exit $?
+        $service
     done
 }
 
