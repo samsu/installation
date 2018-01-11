@@ -315,6 +315,7 @@ function mq() {
             fi
             if [[ "${_first_node^^}" == 'TRUE' ]]; then
                 _first_node="$_hostname"
+            fi
         done
 
         hostname |grep $_first_node
