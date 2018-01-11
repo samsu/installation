@@ -247,7 +247,10 @@ expect eof
             echo "Error: multiply ips required at the option 'DB_CLUSTER_IP_LIST' for database HA."
             exit 30
         fi
+        
         systemctl stop mariadb.service
+        systemctl disable mariadb.service
+
         mysql_install_db --defaults-file="$DB_HA_CONF" --user=mysql
 
         ip address | grep "$primary_ip"
