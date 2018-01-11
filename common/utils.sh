@@ -143,3 +143,16 @@ function _installation() {
 function _timestamp {
     awk '{ print strftime("%Y-%m-%d %H:%M:%S | "), $0; fflush(); }'
 }
+
+
+function _wait() {
+    num=$(echo "$*" | grep -o '[0-9]\+')
+    i=0
+    while [[ "$i" -le "$num" ]] ; do
+        for c in / - \\ \|; do
+            printf '%s\b' "$c"
+            sleep 1s
+        done
+        $(i++)
+    done
+}

@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# The installation configuration file local.conf
+local.conf
+
 # Distribution / packaging
 .Python
 env/

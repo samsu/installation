@@ -60,7 +60,7 @@ Usage:
    
     git clone https://github.com/samsu/installation
     cd installation
-    vi local.conf  # set related variables according to your environment
+    cp local.conf.example local.conf && vi local.conf  # set related variables according to your environment
     ./ins.sh [-h] [-v openstack_releasename] rolenames
 
 
