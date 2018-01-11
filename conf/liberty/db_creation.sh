@@ -33,6 +33,7 @@ function _services_db_creation() {
         eval SERVICE_DB_PWD=\$$(echo DB_PWD_${service^^})
 
         _db_creation $SERVICE_DB_USER $SERVICE_DB_PWD $service
+        echo "The database for ${service} was created."
     done
 }
 

@@ -38,6 +38,7 @@ function _services_db_creation() {
             _db_creation $SERVICE_DB_USER $SERVICE_DB_PWD nova_api
             _db_creation $SERVICE_DB_USER $SERVICE_DB_PWD nova_cell0
         fi
+        echo "The database for ${service} was created."
     done
 }
 
