@@ -270,7 +270,6 @@ expect eof
     if [ ! -z "$_start_options" ] || [[ ${DB_HA^^} == 'FALSE' ]]; then
         _services_db_creation
     fi
-    echo "@#$@#$@$#$@$"
 }
 
 
@@ -552,5 +551,6 @@ function main {
     _log
     _display starting
     _installation $@ | _timestamp
+    echo " ## parm = $*"
     _display completed
 }
