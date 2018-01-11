@@ -36,6 +36,7 @@ function _services_db_creation() {
         if [[ ${service,,} == 'nova' ]]; then
             _db_creation $SERVICE_DB_USER $SERVICE_DB_PWD nova_api
         fi
+        echo "The database for ${service} was created."
     done
 }
 
