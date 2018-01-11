@@ -318,7 +318,7 @@ function mq() {
             fi
         done
 
-        hostname |grep $_first_node
+        hostname -s | grep $_first_node
         if [[ "$?" -ne 0 ]]; then
             rabbitmqctl stop_app
             rabbitmqctl join_cluster --ram "rabbit@$_first_node"
