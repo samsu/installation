@@ -262,7 +262,7 @@ expect eof
 
         # check the cluster status, show how many nodes in the cluster
         if [ ! -z "$_start_options" ]; then
-            sleep 60s
+            sleep 20s
         fi
         mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW STATUS LIKE 'wsrep_cluster_size';"
     fi
@@ -270,6 +270,7 @@ expect eof
     if [ ! -z "$_start_options" ] || [[ ${DB_HA^^} == 'FALSE' ]]; then
         _services_db_creation
     fi
+    echo "@#$@#$@$#$@$"
 }
 
 
