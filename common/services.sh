@@ -241,10 +241,9 @@ expect eof
 
         OIFS=$IFS
         IFS=','
-        set -- junk $DB_CLUSTER_IP_LIST
-        shift
-        primary_ip=$1
-        other_ips=$2
+        read -ra DB_CLUSTER_IP_LIST <<< "$DB_CLUSTER_IP_LIST"
+        primary_ip="${DB_CLUSTER_IP_LIST[0]}"
+        other_ips="${DB_CLUSTER_IP_LIST[1]}"
         IFS="$OIFS"
         if [ -z "$other_ips" ]; then
             echo "Error: multiply ips required at the option 'DB_CLUSTER_IP_LIST' for database HA."
@@ -305,10 +304,9 @@ function mq() {
         for node in "${!RABBIT_CLUSTER[@]}"; do
             node_info=${RABBIT_CLUSTER[$node]}
             grep "$node_info" /etc/hosts || echo "$node_info" >> /etc/hosts
-            set -- junk $node_info
-            shift
-            _ip=$1
-            _hostname=$2
+            read -ra node_info <<< "$node_info"
+            _ip="${node_info[0]}"
+            _hostname="${node_info[1]}"
             if [ -z "$RABBIT_LIST" ]; then
                 RABBIT_LIST="$RABBIT_USER:$RABBIT_PASS@$_ip:$RABBIT_PORT"
             else
