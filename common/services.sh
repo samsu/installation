@@ -549,6 +549,5 @@ function main {
     _log
     _display starting
     _installation $@ | _timestamp
-    echo " ## parm = $*"
     _display completed
 }
