@@ -315,13 +315,16 @@ function mq() {
             fi
             if [[ "${_first_node^^}" == 'TRUE' ]]; then
                 _first_node="$_hostname"
-            else
-                rabbitmqctl stop_app
-                rabbitmqctl join_cluster --ram "rabbit@$_first_node"
-                rabbitmqctl start_app
-                rabbitmqctl cluster_status | grep "rabbit@$_first_node"
-            fi
         done
+
+        hostname |grep $_first_node
+        if [[ "$?" -ne 0 ]]; then
+            rabbitmqctl stop_app
+            rabbitmqctl join_cluster --ram "rabbit@$_first_node"
+            rabbitmqctl start_app
+            rabbitmqctl cluster_status | grep "rabbit@$_first_node"
+        fi
+
     else
         systemctl restart rabbitmq-server.service
     fi
