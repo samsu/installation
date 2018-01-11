@@ -8,6 +8,7 @@ __pycache__/
 
 # The installation configuration file local.conf
 local.conf
+*.idea
 
 # Distribution / packaging
 .Python
