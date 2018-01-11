@@ -257,11 +257,11 @@ expect eof
             _start_options="--wsrep-new-cluster"
         fi
         mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql "$_start_options" &
-        sleep 5s
+        _wait 5s
 
         # check the cluster status, show how many nodes in the cluster
         if [ ! -z "$_start_options" ]; then
-            sleep 20s
+            _wait 20s
         fi
         mysql -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW STATUS LIKE 'wsrep_cluster_size';"
     fi
@@ -324,7 +324,7 @@ function mq() {
     else
         systemctl restart rabbitmq-server.service
     fi
-    sleep 5s
+    _wait 5s
     rabbitmqctl change_password "$RABBIT_USER" "$RABBIT_PASS"
 }
 
@@ -384,7 +384,7 @@ function glance() {
 
         local _COUNT=0
         while true; do
-            sleep 5s
+            _wait 5s
             (netstat -anp|grep 9292) && (netstat -anp|grep 9191)
             if [ $? -eq 0 ]; then
                 break
