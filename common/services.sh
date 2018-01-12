@@ -251,13 +251,16 @@ expect eof
         systemctl stop mariadb.service
         systemctl disable mariadb.service
 
-        mysql_install_db --defaults-file="$DB_HA_CONF" --user=mysql
+        # run at backend to avoid any hangout
+        nohup mysql_install_db --defaults-file=$DB_HA_CONF --user=mysql >/dev/null 2>&1 &
+        _wait 8s
 
         ip address | grep "$primary_ip"
         if [ $? -eq 0 ]; then
             _start_options="--wsrep-new-cluster"
         fi
-        mysqld_safe --defaults-file="$DB_HA_CONF" --user=mysql "$_start_options" &
+        # run at backend to avoid any hangout
+        nohup mysqld_safe --defaults-file=$DB_HA_CONF --user=mysql $_start_options >/dev/null 2>&1 &
         _wait 5s
 
         # check the cluster status, show how many nodes in the cluster
