@@ -40,7 +40,7 @@ function _nova_configure() {
         crudini --set $NOVA_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
         crudini --set $NOVA_CONF keystone_authtoken username $KEYSTONE_U_NOVA
         crudini --set $NOVA_CONF keystone_authtoken password $KEYSTONE_U_PWD_NOVA
-        crudini --set $NOVA_CONF keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
+        crudini --set $NOVA_CONF keystone_authtoken memcached_servers $MEMCACHED_SERVERS
 
         crudini --set $NOVA_CONF glance api_servers http://$CTRL_MGMT_IP:9292
 
@@ -61,6 +61,7 @@ function _nova_configure() {
         # due to a packaging bug.
         grep 'Directory /usr/bin' /etc/httpd/conf.d/00-nova-placement-api.conf || \
         cat >> /etc/httpd/conf.d/00-nova-placement-api.conf << EOF
+
 <Directory /usr/bin>
    <IfVersion >= 2.4>
       Require all granted
@@ -70,6 +71,7 @@ function _nova_configure() {
       Allow from all
    </IfVersion>
 </Directory>
+
 EOF
 
         egrep -wo 'vmx|svm' /proc/cpuinfo > /dev/null 2>&1

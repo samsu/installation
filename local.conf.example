@@ -37,6 +37,15 @@ declare -a RABBIT_CLUSTER=(
     '10.160.55.252 db-test2'
 )
 
+# MEMCACHED_SERVERS info for running multiply memcached nodes
+# if memcached service was hidden at the backend of a load balance, then the
+# MEMCACHED_SERVERS value should be VIP:11211, user doesn't need to set, cause
+# it's default value is $CTRL_MGMT_IP:11211
+# if memcached doesn't hidden at the backend of a load balance or not the
+# default value, then users have to set the MEMCACHED_SERVERS,
+# the format is as below:
+# MEMCACHED_SERVERS='10.160.55.251:11211,10.160.55.252:11211,10.160.55.253:11211'
+
 # To enable fortinet plugin, you have to set ENABLE_FORTINET_PLUGIN as True
 # and update the following fortigate variables.
 # Notes: TYPE_DR have set as 'vlan' when enable fortigate plugin

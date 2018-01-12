@@ -149,7 +149,7 @@ function _neutron_configure() {
             crudini --set $NEUTRON_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
             crudini --set $NEUTRON_CONF keystone_authtoken username $KEYSTONE_U_NEUTRON
             crudini --set $NEUTRON_CONF keystone_authtoken password $KEYSTONE_U_PWD_NEUTRON
-            crudini --set $NEUTRON_CONF keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
+            crudini --set $NEUTRON_CONF keystone_authtoken memcached_servers $MEMCACHED_SERVERS
         fi
 
         ## /etc/neutron/plugins/ml2/ml2_conf.ini

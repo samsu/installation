@@ -27,5 +27,5 @@ function _cinder_configure() {
     crudini --set $CINDER_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
     crudini --set $CINDER_CONF keystone_authtoken username $KEYSTONE_U_NOVA
     crudini --set $CINDER_CONF keystone_authtoken password $KEYSTONE_U_PWD_NOVA
-    crudini --set $CINDER_CONF keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
+    crudini --set $CINDER_CONF keystone_authtoken memcached_servers $MEMCACHED_SERVERS
 }

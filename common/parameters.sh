@@ -14,6 +14,7 @@ export INTERFACE_INT_IP=$(ip address show $INTERFACE_INT | sed -En 's/127.0.0.1/
 export MGMT_IP=$(ip address show $INTERFACE_MGMT | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 
 export CTRL_MGMT_IP=${CTRL_MGMT_IP:-$MGMT_IP}
+export MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-$CTRL_MGMT_IP:11211}
 
 export NTPSRV=${NTPSRV:-$CTRL_MGMT_IP}
 
