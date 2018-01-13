@@ -46,6 +46,9 @@ declare -a RABBIT_CLUSTER=(
 # the format is as below:
 # MEMCACHED_SERVERS='10.160.55.251:11211,10.160.55.252:11211,10.160.55.253:11211'
 
+# Cinder configuration
+CINDER_VOL_DEV=/dev/sdb1
+
 # To enable fortinet plugin, you have to set ENABLE_FORTINET_PLUGIN as True
 # and update the following fortigate variables.
 # Notes: TYPE_DR have set as 'vlan' when enable fortigate plugin

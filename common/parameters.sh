@@ -71,6 +71,9 @@ export KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 
 export REGION=${REGION:-RegionOne}
 
+# cinder storage volume disk
+export CINDER_VOL_DEV=${CINDER_VOL_DEV:-/dev/sdb}
+
 # Enable Distributed Virtual Routers(True or False)
 export DVR=${DVR:-False}
 
@@ -118,8 +121,6 @@ export ML2_CONF=${ML2_CONF:-"/etc/neutron/plugins/ml2/ml2_conf.ini"}
 export OVS_CONF=${OVS_CONF:-"/etc/neutron/plugins/ml2/openvswitch_agent.ini"}
 
 export INS_KERNELS=${INS_KERNELS:-2}
-
-export CINDER_VOL_DEV=${CINDER_VOL_DEV:-/dev/sdb}
 
 LOGIN_INFO="
 After all Openstack roles are installed, you can access the
