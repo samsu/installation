@@ -23,7 +23,7 @@ devices {
 	obtain_device_list_from_udev = 1
 	external_device_info_source = "none"
 	preferred_names = [ "^/dev/mpath/", "^/dev/mapper/mpath", "^/dev/[hs]d" ]
-    filter = "$_filter"
+	filter = $(echo $_filter)
 	cache_dir = "/etc/lvm/cache"
 	cache_file_prefix = ""
 	write_cache_state = 1
