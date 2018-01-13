@@ -10,7 +10,7 @@ function update_lvm_filter() {
     for lvm in $LVMS; do
         _filter="'a/$lvm/', $_filter"
     done
-    _filter="[ _filter ]"
+    _filter="[ $_filter ]"
     cat > /etc/lvm/lvm.conf << EOF
 config {
 	checks = 1
