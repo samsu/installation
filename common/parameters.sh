@@ -7,11 +7,13 @@ export DEBUG=${DEBUG:-False}
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
 export INTERFACE_EXT=${INTERFACE_EXT:-eth2}
+export INTERFACE_STG=${INTERFACE_STG:-$INTERFACE_MGMT}
 
 export VLAN_RANGES=${VLAN_RANGES:-physnet1:1009:1099}
 
 export INTERFACE_INT_IP=$(ip address show $INTERFACE_INT | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 export MGMT_IP=$(ip address show $INTERFACE_MGMT | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+export STORAGE_IP=$(ip address show $INTERFACE_STG | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 
 export CTRL_MGMT_IP=${CTRL_MGMT_IP:-$MGMT_IP}
 export MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-$CTRL_MGMT_IP:11211}
@@ -116,6 +118,8 @@ export ML2_CONF=${ML2_CONF:-"/etc/neutron/plugins/ml2/ml2_conf.ini"}
 export OVS_CONF=${OVS_CONF:-"/etc/neutron/plugins/ml2/openvswitch_agent.ini"}
 
 export INS_KERNELS=${INS_KERNELS:-2}
+
+export CINDER_VOL_DEV=${CINDER_VOL_DEV:-/dev/sdb}
 
 LOGIN_INFO="
 After all Openstack roles are installed, you can access the
