@@ -69,3 +69,7 @@ declare -A REPO_MIRROR_URLS=(
     [epel]='http://10.160.37.50/epel/\$releasever/x86_64'
     [cloud]='http://10.160.37.50/centos/\$releasever/cloud/\$basearch/openstack-${INS_OPENSTACK_RELEASE,,}/'
 )
+
+
+# Glance storage backend
+GLANCE_STOR_BACKEND = cinder
