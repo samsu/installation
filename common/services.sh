@@ -539,6 +539,19 @@ function controller() {
     dashboard
 }
 
+function shared() {
+    database
+    mq
+}
+
+function api() {
+    keystone
+    glance
+    nova_ctrl
+    neutron_ctrl
+    cinder_ctrl
+    dashboard
+}
 
 function network() {
     neutron_network
