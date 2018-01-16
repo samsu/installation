@@ -172,3 +172,5 @@ else
 fi
 
 export DEFAULT_DOMAIN_ID=''
+
+export GLANCE_STOR_BACKEND=${GLANCE_STOR_BACKEND: file}
