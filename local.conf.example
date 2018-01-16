@@ -72,4 +72,4 @@ declare -A REPO_MIRROR_URLS=(
 
 
 # Glance storage backend
-GLANCE_STOR_BACKEND = cinder
+GLANCE_STOR_BACKEND=cinder
