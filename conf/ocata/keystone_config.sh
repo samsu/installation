@@ -80,9 +80,9 @@ function _keystone_configure() {
                 openstack endpoint create --region $REGION compute admin http://$CTRL_MGMT_IP:8774/v2.1
 
                 openstack service create --name placement --description "Placement API" placement
-                openstack endpoint create --region $REGION placement public http://$CTRL_MGMT_IP/placement
-                openstack endpoint create --region $REGION placement internal http://$CTRL_MGMT_IP/placement
-                openstack endpoint create --region $REGION placement admin http://$CTRL_MGMT_IP/placement
+                openstack endpoint create --region $REGION placement public http://$CTRL_MGMT_IP:8778
+                openstack endpoint create --region $REGION placement internal http://$CTRL_MGMT_IP:8778
+                openstack endpoint create --region $REGION placement admin http://$CTRL_MGMT_IP:8778
 
             elif  [ $service == 'neutron' ] ; then
                 openstack service create --name neutron --description "OpenStack Networking" network

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 source "$TOP_DIR/common/utils.sh"
+source "$TOP_DIR/common/configs.sh"
 
 function _repo_epel() {
     if [[ "$*" == "starting" ]]; then
@@ -486,16 +487,33 @@ function neutron_network() {
 
 
 
+
 function cinder_ctrl() {
     # cinder ctrl
     yum install -y openstack-cinder
 
-    _cinder_configure
+    _cinder_configure cinder_ctrl
 
     su -s /bin/sh -c "cinder-manage db sync" cinder
 
     systemctl enable openstack-cinder-api.service openstack-cinder-scheduler.service
     systemctl restart openstack-cinder-api.service openstack-cinder-scheduler.service
+}
+
+
+function cinder_storage() {
+    # cinder volume
+    yum install -y lvm2 device-mapper-persistent-data openstack-cinder targetcli python-keystone
+
+    #fdisk -l $CINDER_VOL_DEV || exit 50
+    #pvdisplay $CINDER_VOL_DEV || pvcreate $CINDER_VOL_DEV
+
+    update_lvm_filter
+
+    _cinder_configure cinder_storage
+
+    systemctl enable openstack-cinder-volume.service target.service
+    systemctl start openstack-cinder-volume.service target.service
 }
 
 
@@ -539,6 +557,19 @@ function controller() {
     dashboard
 }
 
+function shared() {
+    database
+    mq
+}
+
+function api() {
+    keystone
+    glance
+    nova_ctrl
+    neutron_ctrl
+    cinder_ctrl
+    dashboard
+}
 
 function network() {
     neutron_network

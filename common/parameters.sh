@@ -7,13 +7,16 @@ export DEBUG=${DEBUG:-False}
 export INTERFACE_MGMT=${INTERFACE_MGMT:-eth0}
 export INTERFACE_INT=${INTERFACE_INT:-eth1}
 export INTERFACE_EXT=${INTERFACE_EXT:-eth2}
+export INTERFACE_STG=${INTERFACE_STG:-$INTERFACE_MGMT}
 
 export VLAN_RANGES=${VLAN_RANGES:-physnet1:1009:1099}
 
 export INTERFACE_INT_IP=$(ip address show $INTERFACE_INT | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 export MGMT_IP=$(ip address show $INTERFACE_MGMT | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
+export STORAGE_IP=$(ip address show $INTERFACE_STG | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 
 export CTRL_MGMT_IP=${CTRL_MGMT_IP:-$MGMT_IP}
+export MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-$CTRL_MGMT_IP:11211}
 
 export NTPSRV=${NTPSRV:-$CTRL_MGMT_IP}
 
@@ -49,6 +52,20 @@ export ERLANG_COOKIE=${ERLANG_COOKIE:-RETATECCEBVIMIRCFTNT}
     #    '10.160.37.56 centos7-6'
     #)
 #fi
+if [[ ${RABBIT_HA^^} == 'TRUE' ]]; then
+    for node in "${!RABBIT_CLUSTER[@]}"; do
+        node_info=${RABBIT_CLUSTER[$node]}
+        read -ra node_info <<< "$node_info"
+        _ip="${node_info[0]}"
+        if [ -z "$RABBIT_LIST" ]; then
+            RABBIT_LIST=""
+            RABBIT_LIST="$RABBIT_USER:$RABBIT_PASS@$_ip:$RABBIT_PORT"
+        else
+            RABBIT_LIST="$RABBIT_USER:$RABBIT_PASS@$_ip:$RABBIT_PORT,$RABBIT_LIST"
+        fi
+    done
+fi
+
 #export RABBIT_CLUSTER
 
 # openstack components
@@ -67,6 +84,9 @@ export KEYSTONE_U_ADMIN=admin
 export KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 
 export REGION=${REGION:-RegionOne}
+
+# cinder storage volume disk
+export CINDER_VOL_DEV=${CINDER_VOL_DEV:-/dev/sdb}
 
 # Enable Distributed Virtual Routers(True or False)
 export DVR=${DVR:-False}
@@ -172,3 +192,5 @@ else
 fi
 
 export DEFAULT_DOMAIN_ID=''
+
+export GLANCE_STOR_BACKEND=${GLANCE_STOR_BACKEND: file}

@@ -37,7 +37,7 @@ function _nova_configure() {
         crudini --set $NOVA_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
         crudini --set $NOVA_CONF keystone_authtoken username $KEYSTONE_U_NOVA
         crudini --set $NOVA_CONF keystone_authtoken password $KEYSTONE_U_PWD_NOVA
-        crudini --set $NOVA_CONF keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
+        crudini --set $NOVA_CONF keystone_authtoken memcached_servers $MEMCACHED_SERVERS
 
 
         crudini --set $NOVA_CONF glance host $CTRL_MGMT_IP

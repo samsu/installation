@@ -2,7 +2,7 @@ function _cinder_configure() {
     crudini --set $CINDER_CONF database connection mysql://$DB_USER_CINDER:$DB_PWD_CINDER@$DB_IP/cinder
     crudini --set $CINDER_CONF DEFAULT rpc_backend rabbit
     crudini --set $CINDER_CONF DEFAULT auth_strategy keystone
-    crudini --set $CINDER_CONF DEFAULT my_ip $MGMT_IP
+    crudini --set $CINDER_CONF DEFAULT my_ip $STORAGE_IP
     crudini --set $CINDER_CONF DEFAULT debug $DEBUG
 
     crudini --set $CINDER_CONF DEFAULT rabbit_ha_queues $RABBIT_HA
@@ -25,7 +25,28 @@ function _cinder_configure() {
     crudini --set $CINDER_CONF keystone_authtoken user_domain_name default
     crudini --set $CINDER_CONF keystone_authtoken auth_type password
     crudini --set $CINDER_CONF keystone_authtoken project_name $KEYSTONE_T_NAME_SERVICE
-    crudini --set $CINDER_CONF keystone_authtoken username $KEYSTONE_U_NOVA
-    crudini --set $CINDER_CONF keystone_authtoken password $KEYSTONE_U_PWD_NOVA
-    crudini --set $CINDER_CONF keystone_authtoken memcached_servers $CTRL_MGMT_IP:11211
+    crudini --set $CINDER_CONF keystone_authtoken username $KEYSTONE_U_CINDER
+    crudini --set $CINDER_CONF keystone_authtoken password $KEYSTONE_U_PWD_CINDER
+    crudini --set $CINDER_CONF keystone_authtoken memcached_servers $MEMCACHED_SERVERS
+
+    case "$1" in
+    'cinder_ctrl' )
+
+    ;;
+
+    'cinder_storage' )
+        crudini --set $CINDER_CONF DEFAULT enabled_backends lvm
+        crudini --set $CINDER_CONF DEFAULT glance_api_servers http://$CTRL_MGMT_IP:9292
+
+        crudini --set $CINDER_CONF lvm volume_driver cinder.volume.drivers.lvm.LVMVolumeDriver
+        crudini --set $CINDER_CONF lvm volume_group cinder-volumes
+        crudini --set $CINDER_CONF lvm iscsi_protocol iscsi
+        crudini --set $CINDER_CONF lvm iscsi_helper lioadm
+
+        crudini --set $CINDER_CONF oslo_concurrency lock_path /var/lib/cinder/tmp
+    ;;
+    * ) echo "The inputed params $1 is invaild."
+        exit 52
+        ;;
+    esac
 }
