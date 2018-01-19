@@ -21,6 +21,10 @@ function _nova_configure() {
         crudini --set $NOVA_CONF vnc vncserver_listen 0.0.0.0
         crudini --set $NOVA_CONF vnc vncserver_proxyclient_address $MGMT_IP
         crudini --set $NOVA_CONF vnc novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
+        crudini --set $NOVA_CONF cache memcache_servers "$MEMCACHED_SERVERS"
+        crudini --set $NOVA_CONF cache enabled true
+        crudini --set $NOVA_CONF cache backend oslo_cache.memcache_pool
+        crudini --set $NOVA_CONF consoleauth token_ttl 600
 
         if [[ ${CONFIG_DRIVE^^} == 'TRUE' ]]; then
             crudini --set $NOVA_CONF DEFAULT force_config_drive True
