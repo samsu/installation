@@ -469,6 +469,15 @@ function neutron_compute() {
 
 }
 
+function neutron_dhcp() {
+    # install neutron dhcp agent on controller or compute nodes
+    yum install -y openstack-neutron
+
+    _neutron_configure neutron_dhcp
+
+    systemctl enable neutron-dhcp-agent.service
+    systemctl restart neutron-dhcp-agent.service
+}
 
 function neutron_network() {
     yum install -y openstack-neutron openstack-neutron-ml2 openstack-neutron-openvswitch
