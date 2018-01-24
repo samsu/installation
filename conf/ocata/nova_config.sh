@@ -60,6 +60,9 @@ function _nova_configure() {
         crudini --set $NOVA_CONF placement username $KEYSTONE_U_PLACEMENT
         crudini --set $NOVA_CONF placement password $KEYSTONE_U_PWD_PLACEMENT
 
+        # enable host aggregate to seperate FAC from LOG instances
+        crudini --set $NOVA_CONF filter_scheduler enabled_filters AggregateInstanceExtraSpecsFilter,RetryFilter,AvailabilityZoneFilter,RamFilter,DiskFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter
+
         # Need to enable access to the Placement API by adding the following
         # configuration to /etc/httpd/conf.d/00-nova-placement-api.conf
         # due to a packaging bug.
