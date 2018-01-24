@@ -28,7 +28,9 @@ function _cinder_configure() {
     crudini --set $CINDER_CONF keystone_authtoken username $KEYSTONE_U_CINDER
     crudini --set $CINDER_CONF keystone_authtoken password $KEYSTONE_U_PWD_CINDER
     crudini --set $CINDER_CONF keystone_authtoken memcached_servers $MEMCACHED_SERVERS
-
+    if [[ $GLANCE_STOR_BACKEND == "cinder" ]]; then
+        crudini --set $CINDER_CONF DEFAULT image_upload_use_cinder_backend true
+    fi
     case "$1" in
     'cinder_ctrl' )
 
