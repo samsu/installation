@@ -21,6 +21,9 @@ function _glance_configure() {
         crudini --set /etc/glance/glance-api.conf glance_store stores file,http,swift,cinder
         crudini --set /etc/glance/glance-api.conf glance_store default_store cinder
         crudini --set /etc/glance/glance-api.conf glance_store cinder_store_auth_address http://$CTRL_MGMT_IP:5000/v2.0
+        crudini --set /etc/glance/glance-api.conf glance_store cinder_store_user_name $KEYSTONE_U_ADMIN 
+        crudini --set /etc/glance/glance-api.conf glance_store cinder_store_project_name $KEYSTONE_T_NAME_ADMIN 
+        crudini --set /etc/glance/glance-api.conf glance_store cinder_store_password $KEYSTONE_U_ADMIN_PWD
         crudini --set /etc/glance/glance-api.conf glance_store cinder_catalog_info volumev2::publicURL
         crudini --set /etc/glance/glance-api.conf glance_store rootwrap_config /etc/glance/rootwrap.conf
         crudini --set /etc/glance/glance-api.conf store_type_location_strategy store_type_preference cinder,file,http
