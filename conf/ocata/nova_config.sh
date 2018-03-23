@@ -6,7 +6,7 @@ function _nova_configure() {
         crudini --set $NOVA_CONF api_database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$DB_IP/nova_api
         crudini --set $NOVA_CONF database connection mysql://$DB_USER_NOVA:$DB_PWD_NOVA@$DB_IP/nova
 
-        crudini --set $NOVA_CONF DEFAULT rabbit_ha_queues $RABBIT_HA
+        crudini --set $NOVA_CONF oslo_messaging_rabbit rabbit_ha_queues $RABBIT_HA
         crudini --set $NOVA_CONF DEFAULT transport_url "rabbit://$RABBIT_LIST"
 
         #crudini --set $NOVA_CONF DEFAULT rpc_backend rabbit
@@ -21,6 +21,10 @@ function _nova_configure() {
         crudini --set $NOVA_CONF vnc vncserver_listen 0.0.0.0
         crudini --set $NOVA_CONF vnc vncserver_proxyclient_address $MGMT_IP
         crudini --set $NOVA_CONF vnc novncproxy_base_url http://$CTRL_MGMT_IP:6080/vnc_auto.html
+        crudini --set $NOVA_CONF cache memcache_servers "$MEMCACHED_SERVERS"
+        crudini --set $NOVA_CONF cache enabled true
+        crudini --set $NOVA_CONF cache backend oslo_cache.memcache_pool
+        crudini --set $NOVA_CONF consoleauth token_ttl 600
 
         if [[ ${CONFIG_DRIVE^^} == 'TRUE' ]]; then
             crudini --set $NOVA_CONF DEFAULT force_config_drive True

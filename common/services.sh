@@ -505,8 +505,8 @@ function cinder_storage() {
     # cinder volume
     yum install -y lvm2 device-mapper-persistent-data openstack-cinder targetcli python-keystone
 
-    fdisk -l $CINDER_VOL_DEV || exit 50
-    pvdisplay $CINDER_VOL_DEV || pvcreate $CINDER_VOL_DEV
+    #fdisk -l $CINDER_VOL_DEV || exit 50
+    #pvdisplay $CINDER_VOL_DEV || pvcreate $CINDER_VOL_DEV
 
     update_lvm_filter
 
@@ -557,6 +557,19 @@ function controller() {
     dashboard
 }
 
+function shared() {
+    database
+    mq
+}
+
+function api() {
+    keystone
+    glance
+    nova_ctrl
+    neutron_ctrl
+    cinder_ctrl
+    dashboard
+}
 
 function network() {
     neutron_network
