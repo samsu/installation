@@ -64,6 +64,8 @@ if [[ ${RABBIT_HA^^} == 'TRUE' ]]; then
             RABBIT_LIST="$RABBIT_USER:$RABBIT_PASS@$_ip:$RABBIT_PORT,$RABBIT_LIST"
         fi
     done
+else
+    RABBIT_LIST="$RABBIT_USER:$RABBIT_PASS@$RABBIT_IP:$RABBIT_PORT"
 fi
 
 #export RABBIT_CLUSTER
