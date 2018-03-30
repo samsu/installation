@@ -516,6 +516,7 @@ function _lvm_volume() {
 
             # file volume need to re-attach after reboot
             grep -r "losetup $CINDER_VOL_DEV $CINDER_VOL_FILE" /etc/rc.d/rc.local || echo "losetup $CINDER_VOL_DEV $CINDER_VOL_FILE" >>  /etc/rc.d/rc.local
+            chmod u+x /etc/rc.d/rc.local
             _state=$(systemctl list-unit-files rc-local.service | grep rc-local.service | awk '{print $2}')
 
             if [[ "${_state^^}" == 'DISABLE' ]]; then
