@@ -15,9 +15,9 @@ function _glance_configure() {
     crudini --set /etc/glance/glance-api.conf paste_deploy flavor keystone
 
     crudini --set /etc/glance/glance-api.conf DEFAULT debug $DEBUG
-    crudini --set /etc/glance/glance-api.conf DEFAULT notification_driver noop
+    crudini --set /etc/glance/glance-api.conf oslo_messaging_notifications driver noop
 
-    if [[ $GLANCE_STOR_BACKEND == "cinder" ]]; then
+    if [[ "${GLANCE_STOR_BACKEND^^}" == 'CINDER' ]]; then
         crudini --set /etc/glance/glance-api.conf glance_store stores file,http,swift,cinder
         crudini --set /etc/glance/glance-api.conf glance_store default_store cinder
         crudini --set /etc/glance/glance-api.conf glance_store cinder_store_auth_address http://$CTRL_MGMT_IP:5000/v2.0
@@ -46,9 +46,11 @@ EOF
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken username $KEYSTONE_U_GLANCE
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken password $KEYSTONE_U_PWD_GLANCE
     crudini --set /etc/glance/glance-registry.conf keystone_authtoken memcached_servers $MEMCACHED_SERVERS
+    crudini --set /etc/glance/glance-registry.conf keystone_authtoken service_token_roles_required true
 
     crudini --set /etc/glance/glance-registry.conf paste_deploy flavor keystone
 
     crudini --set /etc/glance/glance-registry.conf DEFAULT debug $DEBUG
-    crudini --set /etc/glance/glance-registry.conf DEFAULT notification_driver noop
+
+    crudini --set /etc/glance/glance-registry.conf oslo_messaging_notifications driver noop
 }

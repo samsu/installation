@@ -86,7 +86,10 @@ export KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 export REGION=${REGION:-RegionOne}
 
 # cinder storage volume disk
-export CINDER_VOL_DEV=${CINDER_VOL_DEV:-/dev/sdb}
+export CINDER_VG_NAME=${CINDER_VG_NAME:-'cinder-volumes'}
+export CINDER_VOL_DEV=${CINDER_VOL_DEV:-'/dev/loop0'}
+export CINDER_VOL_FILE_SIZE=${CINDER_VOL_FILE_SIZE:-2}
+export CINDER_VOL_FILE=${CINDER_VOL_FILE:-'/mnt/volume'}
 
 # Enable Distributed Virtual Routers(True or False)
 export DVR=${DVR:-False}

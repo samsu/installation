@@ -118,12 +118,11 @@ function _neutron_configure() {
             crudini --set $NEUTRON_CONF DEFAULT allow_overlapping_ips True
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_status_changes True
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_data_changes True
-            crudini --set $NEUTRON_CONF DEFAULT rabbit_ha_queues $RABBIT_HA
             crudini --set $NEUTRON_CONF DEFAULT transport_url "rabbit://$RABBIT_LIST"
             #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_host $RABBIT_IP
             #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_userid guest
             #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
-
+            crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_ha_queues $RABBIT_HA
             crudini --set $NEUTRON_CONF oslo_concurrency lock_path /var/lib/neutron/tmp
 
             crudini --set $NEUTRON_CONF nova auth_url http://$CTRL_MGMT_IP:35357

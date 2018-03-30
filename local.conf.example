@@ -8,9 +8,6 @@ INTERFACE_EXT=eth2
 #DB_HA=True
 #DB_CACHE_SIZE=300M
 #DB_CLUSTER_IP_LIST="ip1,ip2,ip3"
-DB_HA=True
-DB_CACHE_SIZE=300M
-DB_CLUSTER_IP_LIST="10.160.55.251,10.160.55.252,10.160.55.253"
 
 ## rabbitmq configuration
 #RABBIT_IP=$CTRL_MGMT_IP
@@ -31,11 +28,7 @@ DB_CLUSTER_IP_LIST="10.160.55.251,10.160.55.252,10.160.55.253"
 #    '10.160.37.51 centos7-1'
 #    '10.160.37.56 centos7-6'
 #)
-RABBIT_HA=True
-declare -a RABBIT_CLUSTER=(
-    '10.160.55.251 db-test1'
-    '10.160.55.252 db-test2'
-)
+
 
 # MEMCACHED_SERVERS info for running multiply memcached nodes
 # if memcached service was hidden at the backend of a load balance, then the
@@ -47,7 +40,7 @@ declare -a RABBIT_CLUSTER=(
 # MEMCACHED_SERVERS='10.160.55.251:11211,10.160.55.252:11211,10.160.55.253:11211'
 
 # Cinder configuration
-CINDER_VOL_DEV=/dev/sdb1
+#CINDER_VOL_DEV=/dev/sdb1
 
 # To enable fortinet plugin, you have to set ENABLE_FORTINET_PLUGIN as True
 # and update the following fortigate variables.
@@ -58,9 +51,9 @@ FORTINET_EXT_INTERFACE=port9
 FORTINET_INT_INTERFACE=port1
 
 # ml2 network type drive, could be vlan, gre, vxlan
-TYPE_DR=vxlan
+TYPE_DR=vlan
 DVR=False
-#VLAN_RANGES=physnet1:1009:1099
+VLAN_RANGES=physnet1:1009:1099
 
 # If there exist local repositories mirrors, you may add to here to
 # save your installation time.
@@ -72,4 +65,4 @@ declare -A REPO_MIRROR_URLS=(
 
 
 # Glance storage backend
-GLANCE_STOR_BACKEND=cinder
+#GLANCE_STOR_BACKEND=cinder
