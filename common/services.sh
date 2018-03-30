@@ -520,7 +520,7 @@ function _lvm_volume() {
 
             if [[ "${_state^^}" == 'DISABLE' ]]; then
                 systemctl enable rc-local.service
-            if
+            fi
         fi
     fi
 
@@ -535,12 +535,8 @@ function cinder_storage() {
     # cinder volume
     yum install -y lvm2 device-mapper-persistent-data openstack-cinder targetcli python-keystone
 
-    # create LVM volumes
-
-
-    #fdisk -l $CINDER_VOL_DEV || exit 50
-    #pvdisplay $CINDER_VOL_DEV || pvcreate $CINDER_VOL_DEV
     _lvm_volume
+
     update_lvm_filter
 
     _cinder_configure cinder_storage
