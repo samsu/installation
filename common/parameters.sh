@@ -39,7 +39,7 @@ export RABBIT_IP=${RABBIT_IP:-$CTRL_MGMT_IP}
 export RABBIT_USER=${RABBIT_USER:-guest}
 export RABBIT_PASS=${RABBIT_PASS:-$RABBIT_USER}
 export RABBIT_PORT=${RABBIT_PORT:-5672}
-#export RABBIT_LIST=${RABBIT_LIST:-$RABBIT_USER:$RABBIT_PASS@$RABBIT_IP:$RABBIT_PORT}
+export RABBIT_LIST=${RABBIT_LIST:-$RABBIT_USER:$RABBIT_PASS@$RABBIT_IP:$RABBIT_PORT}
 # rabbitmq ha
 export RABBIT_HA=${RABBIT_HA:-False}
 # the length is 20 letters
@@ -86,7 +86,10 @@ export KEYSTONE_U_ADMIN_PWD=$KEYSTONE_U_ADMIN
 export REGION=${REGION:-RegionOne}
 
 # cinder storage volume disk
-export CINDER_VOL_DEV=${CINDER_VOL_DEV:-/dev/sdb}
+export CINDER_VG_NAME=${CINDER_VG_NAME:-'cinder-volumes'}
+export CINDER_VOL_DEV=${CINDER_VOL_DEV:-'/dev/loop0'}
+export CINDER_VOL_FILE_SIZE=${CINDER_VOL_FILE_SIZE:-2}
+export CINDER_VOL_FILE=${CINDER_VOL_FILE:-'/mnt/volume'}
 
 # Enable Distributed Virtual Routers(True or False)
 export DVR=${DVR:-False}

@@ -26,6 +26,8 @@ function _nova_configure() {
         crudini --set $NOVA_CONF cache backend oslo_cache.memcache_pool
         crudini --set $NOVA_CONF consoleauth token_ttl 600
 
+        crudini --set $NOVA_CONF cells enable false
+
         if [[ ${CONFIG_DRIVE^^} == 'TRUE' ]]; then
             crudini --set $NOVA_CONF DEFAULT force_config_drive True
         else

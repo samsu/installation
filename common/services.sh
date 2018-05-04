@@ -495,8 +495,6 @@ function neutron_network() {
 }
 
 
-
-
 function cinder_ctrl() {
     # cinder ctrl
     yum install -y openstack-cinder
@@ -510,12 +508,44 @@ function cinder_ctrl() {
 }
 
 
+function _lvm_volume() {
+    _pv=$(pvdisplay | grep 'PV Name' | grep $CINDER_VOL_DEV | awk '{print $3}')
+    if [[ "$_pv" != "$CINDER_VOL_DEV" ]]; then
+        if [[ -e $CINDER_VOL_DEV ]]; then
+            pvcreate "$CINDER_VOL_DEV"
+        else
+            # if no cinder volume disk assigned, create a file as volume instead
+            # This creates a 2GB file as the physical volume
+            losetup -a | grep "$CINDER_VOL_FILE" >/dev/null 2>&1
+            if [[ $? -ne 0 ]]; then
+                [[ -e "$CINDER_VOL_FILE" ]] || dd if=/dev/zero of="$CINDER_VOL_FILE" bs=1 count=0 seek="$CINDER_VOL_FILE_SIZE"G
+                losetup -a | grep $CINDER_VOL_DEV || losetup "$CINDER_VOL_DEV" "$CINDER_VOL_FILE"
+                pvcreate -y $CINDER_VOL_DEV
+            fi
+
+            # file volume need to re-attach after reboot
+            grep -r "losetup $CINDER_VOL_DEV $CINDER_VOL_FILE" /etc/rc.d/rc.local || echo "losetup $CINDER_VOL_DEV $CINDER_VOL_FILE" >>  /etc/rc.d/rc.local
+            chmod u+x /etc/rc.d/rc.local
+            _state=$(systemctl list-unit-files rc-local.service | grep rc-local.service | awk '{print $2}')
+
+            if [[ "${_state^^}" == 'DISABLE' ]]; then
+                systemctl enable rc-local.service
+            fi
+        fi
+    fi
+
+    vgdisplay | grep 'VG Name' | grep "$CINDER_VG_NAME" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        vgcreate "$CINDER_VG_NAME" "$CINDER_VOL_DEV"
+    fi
+}
+
+
 function cinder_storage() {
     # cinder volume
     yum install -y lvm2 device-mapper-persistent-data openstack-cinder targetcli python-keystone
 
-    #fdisk -l $CINDER_VOL_DEV || exit 50
-    #pvdisplay $CINDER_VOL_DEV || pvcreate $CINDER_VOL_DEV
+    _lvm_volume
 
     update_lvm_filter
 
@@ -559,10 +589,10 @@ function controller() {
     database
     mq
     keystone
-    glance
     nova_ctrl
     neutron_ctrl
     cinder_ctrl
+    glance
     dashboard
 }
 

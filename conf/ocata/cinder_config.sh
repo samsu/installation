@@ -1,12 +1,12 @@
 function _cinder_configure() {
     crudini --set $CINDER_CONF database connection mysql://$DB_USER_CINDER:$DB_PWD_CINDER@$DB_IP/cinder
-    crudini --set $CINDER_CONF DEFAULT rpc_backend rabbit
+    #crudini --set $CINDER_CONF DEFAULT rpc_backend rabbit
     crudini --set $CINDER_CONF DEFAULT auth_strategy keystone
     crudini --set $CINDER_CONF DEFAULT my_ip $STORAGE_IP
     crudini --set $CINDER_CONF DEFAULT debug $DEBUG
-
-    crudini --set $CINDER_CONF DEFAULT rabbit_ha_queues $RABBIT_HA
     crudini --set $CINDER_CONF DEFAULT transport_url "rabbit://$RABBIT_LIST"
+
+    crudini --set $CINDER_CONF oslo_messaging_rabbit rabbit_ha_queues $RABBIT_HA
     #crudini --set $CINDER_CONF oslo_messaging_rabbit rabbit_host $RABBIT_IP
     #crudini --set $CINDER_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
     #crudini --set $CINDER_CONF oslo_messaging_rabbit rabbit_userid $RABBIT_USER
