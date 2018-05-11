@@ -119,6 +119,7 @@ function _neutron_configure() {
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_status_changes True
             crudini --set $NEUTRON_CONF DEFAULT notify_nova_on_port_data_changes True
             crudini --set $NEUTRON_CONF DEFAULT transport_url "rabbit://$RABBIT_LIST"
+            crudini --set $NEUTRON_CONF DEFAULT dhcp_agents_per_network $NEUTRON_DHCP_PER_NET
             #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_host $RABBIT_IP
             #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_userid guest
             #crudini --set $NEUTRON_CONF oslo_messaging_rabbit rabbit_password $RABBIT_PASS
@@ -206,7 +207,7 @@ function _neutron_configure() {
         fi
 
         if [ -e "/etc/neutron/l3_agent.ini" ]; then
-            crudini --set /etc/neutron/l3_agent.ini DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
+            crudini --set /etc/neutron/l3_agent.ini DEFAULT interface_driver openvswitch
             crudini --set /etc/neutron/l3_agent.ini DEFAULT use_namespaces True
             crudini --set /etc/neutron/l3_agent.ini DEFAULT external_network_bridge br-ex
             crudini --set /etc/neutron/l3_agent.ini DEFAULT router_delete_namespaces True
@@ -215,8 +216,8 @@ function _neutron_configure() {
 
         ## configure the DHCP agent /etc/neutron/dhcp_agent.ini
         if [ -e "/etc/neutron/dhcp_agent.ini" ]; then
-            cccrudini --set /etc/neutron/dhcp_agent.ini DEFAULT debug True
-            crudini --set /etc/neutron/dhcp_agent.ini DEFAULT interface_driver neutron.agent.linux.interface.OVSInterfaceDriver
+            crudini --set /etc/neutron/dhcp_agent.ini DEFAULT debug False
+            crudini --set /etc/neutron/dhcp_agent.ini DEFAULT interface_driver openvswitch
             crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dhcp_driver neutron.agent.linux.dhcp.Dnsmasq
             crudini --set /etc/neutron/dhcp_agent.ini DEFAULT use_namespaces True
             crudini --set /etc/neutron/dhcp_agent.ini DEFAULT dhcp_delete_namespaces True
@@ -227,7 +228,6 @@ function _neutron_configure() {
                 chown -R neutron:neutron /etc/neutron
             fi
 
-            crudini --set /etc/neutron/dhcp_agent.ini DEFAULT debug True
         fi
 
         ## config metadata agent /etc/neutron/metadata_agent.ini
@@ -333,6 +333,10 @@ function _neutron_configure() {
                 ovs-vsctl --may-exist add-br br-ex
                 ovs-vsctl --may-exist add-port br-ex $INTERFACE_EXT
             fi
+            ;;
+
+        'neutron_dhcp' )
+            # noop
             ;;
 
         * ) echo "The inputed params $1 is invaild."
