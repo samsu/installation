@@ -48,22 +48,29 @@ function _repo() {
 
 function _ntp() {
 
-    yum install -y ntp net-tools
+    yum install -y ntp net-tools sntp ntpdate
 
     systemctl enable ntpd.service
+    systemctl enable sntp.service
+    systemctl enable ntpdate.service
     systemctl stop ntpd.service
 
     ip address |grep $NTPSRV >/dev/null
 
     if [ $? -eq 0 ]; then
-        ntpdate -s ntp.org
+        cat /etc/ntp.conf |grep "fudge 127.127.1.0 stratum 16"
+        if [ $? -eq 1 ]; then
+            echo "server 127.127.1.0 iburst" >> /etc/ntp.conf
+            echo "fudge 127.127.1.0 stratum 16" >> /etc/ntp.conf
+        fi
     else
         sed -i.bak "s/^server 0.centos.pool.ntp.org iburst/server $NTPSRV/g" /etc/ntp.conf
         sed -i 's/^server 1.centos.pool.ntp.org iburst/# server 1.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 2.centos.pool.ntp.org iburst/# server 2.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 3.centos.pool.ntp.org iburst/# server 3.centos.pool.ntp.org iburst/g' /etc/ntp.conf
-        ntpdate -s $NTPSRV
     fi
+    systemctl restart sntp.service
+    systemctl restart ntpdate.service
     systemctl restart ntpd.service
 }
 
