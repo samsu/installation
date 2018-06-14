@@ -442,7 +442,8 @@ function nova_compute() {
     yum install -y openstack-nova-compute sysfsutils
 
     _nova_configure nova_compute
-
+    # for resizing and migration
+    _nova_ssh_key_login
     systemctl enable libvirtd.service openstack-nova-compute.service
     systemctl restart libvirtd.service openstack-nova-compute.service
 }

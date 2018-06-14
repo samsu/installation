@@ -114,3 +114,15 @@ EOF
         fi
     fi
 }
+
+function _nova_ssh_key_login() {
+    setenforce 0
+    crudini --set /etc/selinux/config '' SELINUX disabled
+    usermod -s /bin/bash nova
+    mkdir /var/lib/nova/.ssh
+    cp -f .ssh/id_rsa /var/lib/nova/.ssh/.
+    cat .ssh/id_rsa.pub > /var/lib/nova/.ssh/authorized_keys
+    echo 'StrictHostKeyChecking no' > /var/lib/nova/.ssh/config
+    chown nova:nova /var/lib/nova/.ssh -R
+    chmod 600 /var/lib/nova/.ssh/id_rsa /var/lib/nova/.ssh/authorized_keys
+}
