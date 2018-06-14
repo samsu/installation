@@ -55,9 +55,9 @@ function _ntp() {
     systemctl enable ntpdate.service
     systemctl stop ntpd.service
 
-    ip address |grep $NTPSRV >/dev/null
-
-    if [ $? -eq 0 ]; then
+    if [ ${NTPSERVER^^} == TRUE ]; then
+        # use canadian ntp server
+        sed -i.bak "s/centos.pool/ca.pool/g" /etc/ntp.conf
         cat /etc/ntp.conf |grep "fudge 127.127.1.0 stratum 16"
         if [ $? -eq 1 ]; then
             echo "server 127.127.1.0 iburst" >> /etc/ntp.conf

@@ -51,7 +51,7 @@ function _nova_configure() {
         crudini --set $NOVA_CONF glance api_servers http://$CTRL_MGMT_IP:9292
 
         crudini --set $NOVA_CONF oslo_concurrency lock_path /var/lib/nova/tmp
-        crudini --set $NEUTRON_CONF oslo_messaging_notifications driver noop
+        crudini --set $NOVA_CONF oslo_messaging_notifications driver noop
 
         crudini --set $NOVA_CONF placement os_region_name $REGION
         crudini --set $NOVA_CONF placement project_domain_name default
