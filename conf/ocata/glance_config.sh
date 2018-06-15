@@ -32,7 +32,7 @@ function _glance_configure() {
         # due to this rdo bug, https://bugzilla.redhat.com/show_bug.cgi?id=1394559 rootwrap filters should be manually defined here.
         cat > /etc/glance/rootwrap.conf << EOF
 [DEFAULT]
-filters_path=/etc/cinder/rootwrap.d
+filters_path=/etc/glance/rootwrap.d
 exec_dirs=/sbin,/usr/sbin,/bin,/usr/bin,/usr/local/bin,/usr/local/sbin
 use_syslog=False
 syslog_log_facility=syslog

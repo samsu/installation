@@ -48,22 +48,29 @@ function _repo() {
 
 function _ntp() {
 
-    yum install -y ntp net-tools
+    yum install -y ntp net-tools sntp ntpdate
 
     systemctl enable ntpd.service
+    systemctl enable sntp.service
+    systemctl enable ntpdate.service
     systemctl stop ntpd.service
 
-    ip address |grep $NTPSRV >/dev/null
-
-    if [ $? -eq 0 ]; then
-        ntpdate -s ntp.org
+    if [ ${NTPSERVER^^} == TRUE ]; then
+        # use canadian ntp server
+        sed -i.bak "s/centos.pool/ca.pool/g" /etc/ntp.conf
+        cat /etc/ntp.conf |grep "fudge 127.127.1.0 stratum 16"
+        if [ $? -eq 1 ]; then
+            echo "server 127.127.1.0 iburst" >> /etc/ntp.conf
+            echo "fudge 127.127.1.0 stratum 16" >> /etc/ntp.conf
+        fi
     else
         sed -i.bak "s/^server 0.centos.pool.ntp.org iburst/server $NTPSRV/g" /etc/ntp.conf
         sed -i 's/^server 1.centos.pool.ntp.org iburst/# server 1.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 2.centos.pool.ntp.org iburst/# server 2.centos.pool.ntp.org iburst/g' /etc/ntp.conf
         sed -i 's/^server 3.centos.pool.ntp.org iburst/# server 3.centos.pool.ntp.org iburst/g' /etc/ntp.conf
-        ntpdate -s $NTPSRV
     fi
+    systemctl restart sntp.service
+    systemctl restart ntpdate.service
     systemctl restart ntpd.service
 }
 
@@ -427,6 +434,7 @@ function nova_ctrl() {
     systemctl restart openstack-nova-api.service \
       openstack-nova-consoleauth.service openstack-nova-scheduler.service \
       openstack-nova-conductor.service openstack-nova-novncproxy.service
+    _create_initial_flavors
 
 }
 
@@ -435,9 +443,11 @@ function nova_compute() {
     yum install -y openstack-nova-compute sysfsutils
 
     _nova_configure nova_compute
-
+    # for resizing and migration
+    _nova_ssh_key_login
     systemctl enable libvirtd.service openstack-nova-compute.service
     systemctl restart libvirtd.service openstack-nova-compute.service
+    _nova_map_hosts_cell0
 }
 
 

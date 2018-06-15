@@ -4,6 +4,8 @@ INTERFACE_MGMT=eth0
 INTERFACE_INT=eth1
 INTERFACE_EXT=eth2
 
+# Indicate if the machine works as local NTP server, default is False
+NTPSERVER=False
 ## To enable database ha, the following options required
 #DB_HA=True
 #DB_CACHE_SIZE=300M

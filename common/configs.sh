@@ -133,3 +133,18 @@ dmeventd {
 }
 EOF
 }
+
+function _create_initial_flavors() {
+    m1.tiny_ram=512; m1.tiny_disk=1; m1.tiny_vcpu=1
+    m1.small_ram=2048; m1.small_disk=20; m1.small_vcpu=1
+    m1.medium_ram=4096; m1.medium_disk=40; m1.medium_vcpu=2
+    m1.large_ram=8192; m1.large_disk=80; m1.large_vcpu=4
+    m1.xlarge_ram=16384; m1.xlarge_disk=160; m1.xlarge_vcpu=8
+    flavors=(m1.tiny m1.small m1.medium m1.large m1.xlarge)
+    for flavor in ${flavors[@]}; do
+        openstack flavor show $flavor
+        if [ $? -eq 1 ]; then
+            openstack flavor create --public $flavor --ram ${flavor}_ram --disk ${flavor}_disk --vcpus ${flavor}_vcpu
+        fi
+    done
+}

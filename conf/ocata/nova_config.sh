@@ -27,6 +27,7 @@ function _nova_configure() {
         crudini --set $NOVA_CONF consoleauth token_ttl 600
 
         crudini --set $NOVA_CONF cells enable false
+        crudini --set $NOVA_CONF cells name cell0
 
         if [[ ${CONFIG_DRIVE^^} == 'TRUE' ]]; then
             crudini --set $NOVA_CONF DEFAULT force_config_drive True
@@ -51,6 +52,7 @@ function _nova_configure() {
         crudini --set $NOVA_CONF glance api_servers http://$CTRL_MGMT_IP:9292
 
         crudini --set $NOVA_CONF oslo_concurrency lock_path /var/lib/nova/tmp
+        crudini --set $NOVA_CONF oslo_messaging_notifications driver noop
 
         crudini --set $NOVA_CONF placement os_region_name $REGION
         crudini --set $NOVA_CONF placement project_domain_name default
@@ -112,4 +114,26 @@ EOF
             su -s /bin/sh -c "nova-manage db sync" nova
         fi
     fi
+}
+
+function _nova_ssh_key_login() {
+    setenforce 0
+    crudini --set /etc/selinux/config '' SELINUX disabled
+    usermod -s /bin/bash nova
+    if ! [ -f .ssh/id_rsa ]; then
+        echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+        echo "key pair is needed for nova compute to trust each other for resizing"
+    fi
+    exit 1
+    mkdir /var/lib/nova/.ssh
+    cp -f .ssh/id_rsa /var/lib/nova/.ssh/.
+    cat .ssh/id_rsa.pub > /var/lib/nova/.ssh/authorized_keys
+    echo 'StrictHostKeyChecking no' > /var/lib/nova/.ssh/config
+    chown nova:nova /var/lib/nova/.ssh -R
+    chmod 600 /var/lib/nova/.ssh/id_rsa /var/lib/nova/.ssh/authorized_keys
+}
+
+function _nova_map_hosts_cell0 {
+    nova-manage cell_v2 map_cell_and_hosts --name cell0
+    nova-manage cell_v2 discover_hosts
 }
