@@ -117,17 +117,17 @@ EOF
 }
 
 function _nova_ssh_key_login() {
-    setenforce 0
-    crudini --set /etc/selinux/config '' SELINUX disabled
-    usermod -s /bin/bash nova
-    if ! [ -f .ssh/id_rsa ]; then
+    if [ -z $SSH_PRIVATE_KEY ]; then
         echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         echo "key pair is needed for nova compute to trust each other for resizing"
+        return 0
     fi
-    exit 1
+    setenforce 0
+    crudini --set /etc/selinux/config '' SELINUX permissive
+    usermod -s /bin/bash nova
     mkdir /var/lib/nova/.ssh
-    cp -f .ssh/id_rsa /var/lib/nova/.ssh/.
-    cat .ssh/id_rsa.pub > /var/lib/nova/.ssh/authorized_keys
+    echo "$SSH_PRIVATE_KEY" > /var/lib/nova/.ssh/id_rsa
+    echo "$SSH_PUBLIC_KEY" > /var/lib/nova/.ssh/authorized_keys
     echo 'StrictHostKeyChecking no' > /var/lib/nova/.ssh/config
     chown nova:nova /var/lib/nova/.ssh -R
     chmod 600 /var/lib/nova/.ssh/id_rsa /var/lib/nova/.ssh/authorized_keys

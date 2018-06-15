@@ -465,6 +465,9 @@ function neutron_ctrl() {
 
 
 function neutron_compute() {
+    # if neutron_dhcp is running with neutron_compute, this may
+    # cause the second role to be left unconfigured
+    unset _NEUTRON_CONFIGED
     # install neutron components on compute nodes
     yum install -y openstack-neutron-ml2 openstack-neutron-openvswitch ipset
 
@@ -480,6 +483,9 @@ function neutron_compute() {
 }
 
 function neutron_dhcp() {
+    # if neutron_dhcp is running with neutron_compute, this may
+    # cause the second role to be left unconfigured
+    unset _NEUTRON_CONFIGED
     # install neutron dhcp agent on controller or compute nodes
     yum install -y openstack-neutron
 

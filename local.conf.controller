@@ -1,0 +1,21 @@
+# openstack config
+CTRL_MGMT_IP=10.27.12.120
+INTERFACE_MGMT=ens192
+NTPSERVER=True
+
+## To enable rabbit mq ha, uncomment the option RABBIT_HA, RABBIT_LIST
+RABBIT_HA=True
+RABBIT_LIST="rabbit:fortinet123@10.27.12.121:5672,rabbit:fortinet123@10.27.12.122:5672,rabbit:fortinet123@10.27.12.123:5672"
+
+
+# ml2 network type drive, could be vlan, gre, vxlan
+TYPE_DR=vlan
+DVR=False
+VLAN_RANGES=physnet1:1:4094
+
+# save your installation time.
+REPO_MIRROR_ENABLE=False
+
+GLANCE_STOR_BACKEND=cinder
+
+NEUTRON_DHCP_PER_NET=8
