@@ -17,6 +17,7 @@ function _nova_configure() {
         crudini --set $NOVA_CONF DEFAULT firewall_driver nova.virt.firewall.NoopFirewallDriver
         crudini --set $NOVA_CONF DEFAULT security_group_api neutron
         crudini --set $NOVA_CONF DEFAULT my_ip $MGMT_IP
+        crudini --set $NOVA_CONF DEFAULT resume_guests_state_on_host_boot true
         crudini --set $NOVA_CONF vnc vnc_enabled True
         crudini --set $NOVA_CONF vnc vncserver_listen 0.0.0.0
         crudini --set $NOVA_CONF vnc vncserver_proxyclient_address $MGMT_IP
