@@ -135,16 +135,19 @@ EOF
 }
 
 function _create_initial_flavors() {
-    m1.tiny_ram=512; m1.tiny_disk=1; m1.tiny_vcpu=1
-    m1.small_ram=2048; m1.small_disk=20; m1.small_vcpu=1
-    m1.medium_ram=4096; m1.medium_disk=40; m1.medium_vcpu=2
-    m1.large_ram=8192; m1.large_disk=80; m1.large_vcpu=4
-    m1.xlarge_ram=16384; m1.xlarge_disk=160; m1.xlarge_vcpu=8
-    flavors=(m1.tiny m1.small m1.medium m1.large m1.xlarge)
+    declare -A ram
+    declare -A disk
+    declare -A vcpu
+    ram[tiny]=512; disk[tiny]=1; vcpu[tiny]=1
+    ram[small]=2048; disk[small]=20; vcpu[small]=1
+    ram[medium]=4096; disk[medium]=40; vcpu[medium]=2
+    ram[large]=8192; disk[large]=80; vcpu[large]=4
+    ram[xlarge]=16384; disk[xlarge]=160; vcpu[xlarge]=8
+    flavors=(tiny small medium large xlarge)
     for flavor in ${flavors[@]}; do
         openstack flavor show $flavor
         if [ $? -eq 1 ]; then
-            openstack flavor create --public $flavor --ram ${flavor}_ram --disk ${flavor}_disk --vcpus ${flavor}_vcpu
+            openstack flavor create --public m1.$flavor --ram ${ram[$flavor]} --disk ${disk[$flavor]} --vcpus ${vcpu[$flavor]}
         fi
     done
 }
